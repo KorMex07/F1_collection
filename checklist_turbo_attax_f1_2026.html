@@ -384,7 +384,7 @@ function candidates(text) {
     if (sc >= 3 || (sc >= 2 && !s.c.name && !s.kw.length)) out.push({ c: s.c, sc });
   }
   out.sort((a, b) => b.sc - a.sc || (isBase(b.c) - isBase(a.c)));
-  return out.slice(0, 5);
+  return out.slice(0, 10);
 }
 async function prep(file) {
   const bmp = await createImageBitmap(file);
@@ -401,12 +401,48 @@ async function prep(file) {
   x.putImageData(im, 0, 0);
   return cv;
 }
-async function ocrImage(file, onProg) {
+function invertCanvas(c) {
+  const o = document.createElement("canvas");
+  o.width = c.width; o.height = c.height;
+  const x = o.getContext("2d");
+  x.drawImage(c, 0, 0);
+  const im = x.getImageData(0, 0, o.width, o.height), d = im.data;
+  for (let i = 0; i < d.length; i += 4) { d[i] = 255 - d[i]; d[i + 1] = 255 - d[i + 1]; d[i + 2] = 255 - d[i + 2]; }
+  x.putImageData(im, 0, 0);
+  return o;
+}
+let ocrWorker = null, ocrProg = null;
+async function getWorker() {
   if (!window.Tesseract) await loadScript(TESS_LIB);
-  let src = file;
-  try { src = (await prep(file)) || file; } catch (e) { src = file; }
-  const r = await window.Tesseract.recognize(src, "eng", { logger: m => onProg && onProg(m) });
-  return (r && r.data && r.data.text) || "";
+  const T = window.Tesseract;
+  if (!T.createWorker) return null;
+  if (!ocrWorker) {
+    // modo 11 = texto disperso: apanha números soltos em qualquer canto da carta
+    ocrWorker = T.createWorker("eng", 1, { logger: m => ocrProg && ocrProg(m) })
+      .then(async w => { await w.setParameters({ tessedit_pageseg_mode: "11" }); return w; })
+      .catch(e => { ocrWorker = null; throw e; });
+  }
+  return ocrWorker;
+}
+async function ocrImage(file, onProg) {
+  ocrProg = onProg;
+  const w = await getWorker();
+  let gray = null;
+  try { gray = await prep(file); } catch (e) { gray = null; }
+  // duas leituras: normal e com as cores invertidas (cartas escuras/foil têm letras claras)
+  const srcs = gray ? [gray, invertCanvas(gray)] : [file];
+  let text = "";
+  for (const s of srcs) {
+    const r = w ? await w.recognize(s) : await window.Tesseract.recognize(s, "eng", { logger: m => onProg && onProg(m) });
+    text += "\n" + ((r && r.data && r.data.text) || "");
+  }
+  return text;
+}
+function searchCards(q) {
+  const words = norm(q).split(/\s+/).filter(Boolean);
+  if (!words.length) return [];
+  return CARDS.filter(c => { const hay = norm([c.n, c.name, c.team, c.sub].join(" ")); return words.every(w => hay.includes(w)); })
+    .slice(0, 12).map(c => ({ c }));
 }
 function openScan() {
   const m = modal(`<h2>Ler carta</h2>
@@ -415,8 +451,8 @@ function openScan() {
     <label class="btn">Galeria<input type="file" id="sh2" accept="image/*" hidden></label></div>
     <p class="hint" id="sst"></p><div id="sres"></div>
     <details id="sraw" hidden><summary>Texto lido (para diagnóstico)</summary><pre id="stxt" style="white-space:pre-wrap;font-size:12px"></pre></details>
-    <p class="hint" style="margin-top:14px">Ou escreve o número da carta:</p>
-    <form id="smf" class="row" style="margin-top:0"><input type="text" id="smi" placeholder="ex.: 4 ou GU 1" style="flex:1;width:auto"><button class="btn" type="submit">Procurar</button></form>
+    <p class="hint" style="margin-top:14px">Se não encontrar a carta, escreve o número ou o nome do piloto:</p>
+    <form id="smf" class="row" style="margin-top:0"><input type="text" id="smi" placeholder="ex.: 4, GU 1 ou norris hero" style="flex:1;width:auto"><button class="btn" type="submit">Procurar</button></form>
     <div class="row"><button class="btn" id="sx">Fechar</button></div>`);
   const st = s => m.querySelector("#sst").textContent = s;
   const show = (list, emptyMsg) => {
@@ -440,8 +476,10 @@ function openScan() {
   m.querySelector("#sh2").addEventListener("change", onFile);
   m.querySelector("#smf").addEventListener("submit", e => {
     e.preventDefault();
-    const r = parseBulk(m.querySelector("#smi").value);
-    show(r.list.map(x => ({ c: x.card })), "Número não encontrado na checklist.");
+    const val = m.querySelector("#smi").value;
+    const r = parseBulk(val);
+    if (r.list.length && !r.bad.length) show(r.list.map(x => ({ c: x.card })), "");
+    else show(searchCards(val), "Nada encontrado. Tenta só o apelido do piloto, por exemplo norris.");
   });
   m.querySelector("#sres").addEventListener("click", e => {
     const b = e.target.closest("[data-add]"); if (!b) return;
