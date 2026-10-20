@@ -1,0 +1,586 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Checklist Turbo Attax F1 2026</title>
+<style>
+  :root {
+    --bg: #f5f5f7; --card: #ffffff; --text: #1d1d1f; --muted: #6e6e73; --line: #d8d8de;
+    --accent: #e10600; --have: #1a7f4b; --have-bg: #e3f4ea; --have-line: #8fd0aa;
+    --shadow: 0 1px 2px rgba(0,0,0,.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #121214; --card: #1c1c20; --text: #f2f2f4; --muted: #9a9aa3; --line: #34343b;
+      --accent: #ff3b30; --have: #5fd38d; --have-bg: #153324; --have-line: #2f7a4f;
+      --shadow: none;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  header { position: sticky; top: 0; z-index: 10; background: var(--bg); border-bottom: 1px solid var(--line); padding: 12px 16px; }
+  .wrap { max-width: 1100px; margin: 0 auto; }
+  .top { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 8px; }
+  h1 { margin: 0; font-size: 20px; }
+  h1 span { color: var(--accent); }
+  .chip { font: inherit; font-size: 12px; padding: 4px 10px; border-radius: 99px; border: 1px solid var(--line); background: var(--card); color: var(--muted); cursor: pointer; white-space: nowrap; }
+  .chip[data-s=ok] { color: var(--have); border-color: var(--have-line); }
+  .chip[data-s=error], .chip[data-s=login] { color: var(--accent); border-color: var(--accent); }
+  .progress { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+  .bar { flex: 1; height: 10px; background: var(--line); border-radius: 99px; overflow: hidden; }
+  .bar > i { display: block; height: 100%; width: 0; background: var(--have); transition: width .25s; }
+  .progress b { white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  input[type=search], input[type=text], input[type=email], input[type=password], textarea, select { font: inherit; padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); color: var(--text); }
+  input[type=search] { flex: 1 1 200px; min-width: 160px; }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .seg button { font: inherit; padding: 7px 12px; border: 0; background: var(--card); color: var(--text); cursor: pointer; }
+  .seg button + button { border-left: 1px solid var(--line); }
+  .seg button.on { background: var(--accent); color: #fff; }
+  .btn { font: inherit; padding: 7px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); color: var(--text); cursor: pointer; display: inline-block; }
+  .btn:hover { border-color: var(--accent); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  main { padding: 16px; }
+  details { background: var(--card); border: 1px solid var(--line); border-radius: 12px; margin-bottom: 12px; box-shadow: var(--shadow); }
+  summary { cursor: pointer; padding: 10px 14px; display: flex; align-items: center; gap: 10px; list-style: none; }
+  summary::-webkit-details-marker { display: none; }
+  summary::before { content: "▸"; color: var(--muted); transition: transform .15s; }
+  details[open] > summary::before { transform: rotate(90deg); }
+  .st { font-weight: 600; flex: 1; }
+  .st small { font-weight: 400; color: var(--muted); margin-left: 6px; }
+  .cnt { font-variant-numeric: tabular-nums; color: var(--muted); }
+  .cnt.done { color: var(--have); font-weight: 600; }
+  .mini { font: inherit; font-size: 12px; padding: 3px 8px; border: 1px solid var(--line); border-radius: 6px; background: transparent; color: var(--muted); cursor: pointer; }
+  .mini:hover { color: var(--text); border-color: var(--accent); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 8px; padding: 4px 14px 14px; }
+  .c { text-align: left; font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px 8px 34px; cursor: pointer; position: relative; min-height: 54px; }
+  .c::before { content: ""; position: absolute; left: 10px; top: 10px; width: 16px; height: 16px; border: 2px solid var(--muted); border-radius: 4px; }
+  .c.have { background: var(--have-bg); border-color: var(--have-line); }
+  .c.have::before { background: var(--have); border-color: var(--have); }
+  .c.have::after { content: "✓"; position: absolute; left: 13px; top: 8px; color: #fff; font-size: 13px; font-weight: 700; }
+  .c .n { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .c .nm { font-weight: 600; display: block; }
+  .c .tm { font-size: 12px; color: var(--muted); display: block; }
+  .dupb { color: var(--accent); margin-left: 4px; }
+  .qs { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+  .qs b { min-width: 20px; text-align: center; font-variant-numeric: tabular-nums; }
+  .qb { font: inherit; width: 28px; height: 28px; line-height: 1; border: 1px solid var(--have-line); border-radius: 8px; background: var(--card); color: var(--text); cursor: pointer; font-size: 16px; }
+  .qb:hover { border-color: var(--accent); }
+  .tag { font-size: 11px; font-weight: 500; padding: 1px 7px; border-radius: 99px; background: var(--line); color: var(--muted); }
+  .empty { text-align: center; color: var(--muted); padding: 40px 0; }
+  footer { max-width: 1100px; margin: 0 auto; padding: 0 16px 28px; color: var(--muted); font-size: 12px; }
+  /* janelas */
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: flex; align-items: flex-end; justify-content: center; z-index: 50; }
+  @media (min-width: 600px) { .modal { align-items: center; } }
+  .box { background: var(--card); color: var(--text); width: 100%; max-width: 480px; max-height: 92vh; overflow: auto; border-radius: 16px 16px 0 0; padding: 18px; }
+  @media (min-width: 600px) { .box { border-radius: 16px; } }
+  .box h2 { margin: 0 0 6px; font-size: 18px; }
+  .box input[type=text], .box input[type=email], .box input[type=password], .box textarea { width: 100%; margin: 4px 0; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; align-items: center; }
+  .hint { color: var(--muted); font-size: 13px; margin: 4px 0 10px; }
+  .bad { color: var(--accent); font-size: 13px; }
+  .cand { border: 1px solid var(--line); border-radius: 10px; padding: 10px; margin: 8px 0; display: flex; gap: 10px; align-items: center; justify-content: space-between; }
+  .cand.best { border-color: var(--have-line); background: var(--have-bg); }
+  .cand .t { font-weight: 600; }
+  .cand .s { font-size: 12px; color: var(--muted); }
+  .toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); background: var(--text); color: var(--bg); padding: 10px 16px; border-radius: 10px; z-index: 60; font-size: 14px; max-width: 90vw; }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="top">
+      <h1>Turbo Attax <span>F1 2026</span> · Checklist</h1>
+      <button class="chip" id="chip" data-s="local">A iniciar…</button>
+    </div>
+    <div class="progress"><div class="bar"><i id="barfill"></i></div><b id="total"></b></div>
+    <div class="controls">
+      <input type="search" id="q" placeholder="Pesquisar piloto, equipa, nº ou série…">
+      <div class="seg" id="flt">
+        <button data-f="all" class="on">Todas</button>
+        <button data-f="have">Tenho</button>
+        <button data-f="miss">Faltam</button>
+        <button data-f="dup">Repetidas</button>
+      </div>
+      <select id="grp">
+        <option value="all">Todo o set</option>
+        <option value="base">Set base (1–353)</option>
+        <option value="extra">Exclusivas e extras</option>
+      </select>
+      <button class="btn primary" id="scan">📷 Ler carta</button>
+      <button class="btn" id="bulk">＋ Por números</button>
+      <button class="btn" id="exp">Exportar</button>
+      <button class="btn" id="imp">Importar</button>
+      <input type="file" id="file" accept=".json" hidden>
+    </div>
+  </div>
+</header>
+<main class="wrap" id="main"></main>
+<footer>
+  Clica numa carta para marcar ou desmarcar. Com sessão iniciada, as cartas sincronizam entre os teus dispositivos; sem sessão ficam só neste browser.
+  Usa "Exportar" para fazer cópia de segurança. Checklist fornecida pela Topps; o conteúdo real e as probabilidades podem variar.
+</footer>
+
+<script>
+const CARDS = [{"n":"1","name":"","team":"McLaren Mastercard Formula 1® Team","sub":"F1® TEAM LOGOS"},{"n":"2","name":"Andrea Stella","team":"McLaren Mastercard Formula 1® Team","sub":"2026 F1® TEAM PRINCIPALS"},{"n":"3","name":"Lando Norris & Oscar Piastri","team":"McLaren Mastercard Formula 1® Team","sub":"2026 F1® DYNAMIC DUOS"},{"n":"4","name":"Lando Norris","team":"McLaren Mastercard Formula 1® Team","sub":"2026 F1® HERO"},{"n":"5","name":"Lando Norris","team":"McLaren Mastercard Formula 1® Team","sub":"POWER IN NUMBERS"},{"n":"6","name":"Lando Norris","team":"McLaren Mastercard Formula 1® Team","sub":"LIGHTNING LIDS"},{"n":"7","name":"Oscar Piastri","team":"McLaren Mastercard Formula 1® Team","sub":"2026 F1® HERO"},{"n":"8","name":"Oscar Piastri","team":"McLaren Mastercard Formula 1® Team","sub":"POWER IN NUMBERS"},{"n":"9","name":"Oscar Piastri","team":"McLaren Mastercard Formula 1® Team","sub":"LIGHTNING LIDS"},{"n":"10","name":"","team":"Mercedes-AMG PETRONAS Formula 1® Team","sub":"F1® TEAM LOGOS"},{"n":"11","name":"Toto Wolff","team":"Mercedes-AMG PETRONAS Formula 1® Team","sub":"2026 F1® TEAM PRINCIPALS"},{"n":"12","name":"George Russell & Kimi Antonelli","team":"Mercedes-AMG PETRONAS Formula 1® Team","sub":"2026 F1® DYNAMIC DUOS"},{"n":"13","name":"George Russell","team":"Mercedes-AMG PETRONAS Formula 1® Team","sub":"2026 F1® HERO"},{"n":"14","name":"George Russell","team":"Mercedes-AMG PETRONAS Formula 1® Team","sub":"POWER IN NUMBERS"},{"n":"15","name":"George Russell","team":"Mercedes-AMG PETRONAS Formula 1® Team","sub":"LIGHTNING LIDS"},{"n":"16","name":"Kimi Antonelli","team":"Mercedes-AMG PETRONAS Formula 1® Team","sub":"2026 F1® HERO"},{"n":"17","name":"Kimi Antonelli","team":"Mercedes-AMG PETRONAS Formula 1® Team","sub":"POWER IN NUMBERS"},{"n":"18","name":"Kimi Antonelli","team":"Mercedes-AMG PETRONAS Formula 1® Team","sub":"LIGHTNING LIDS"},{"n":"19","name":"","team":"Oracle Red Bull Racing","sub":"F1® TEAM LOGOS"},{"n":"20","name":"Laurent Mekies","team":"Oracle Red Bull Racing","sub":"2026 F1® TEAM PRINCIPALS"},{"n":"21","name":"Max Verstappen & Isack Hadjar","team":"Oracle Red Bull Racing","sub":"2026 F1® DYNAMIC DUOS"},{"n":"22","name":"Max Verstappen","team":"Oracle Red Bull Racing","sub":"2026 F1® HERO"},{"n":"23","name":"Max Verstappen","team":"Oracle Red Bull Racing","sub":"POWER IN NUMBERS"},{"n":"24","name":"Max Verstappen","team":"Oracle Red Bull Racing","sub":"LIGHTNING LIDS"},{"n":"25","name":"Isack Hadjar","team":"Oracle Red Bull Racing","sub":"2026 F1® HERO"},{"n":"26","name":"Isack Hadjar","team":"Oracle Red Bull Racing","sub":"POWER IN NUMBERS"},{"n":"27","name":"Isack Hadjar","team":"Oracle Red Bull Racing","sub":"LIGHTNING LIDS"},{"n":"28","name":"","team":"Scuderia Ferrari HP","sub":"F1® TEAM LOGOS"},{"n":"29","name":"Frédéric Vasseur","team":"Scuderia Ferrari HP","sub":"2026 F1® TEAM PRINCIPALS"},{"n":"30","name":"Charles Leclerc & Lewis Hamilton","team":"Scuderia Ferrari HP","sub":"2026 F1® DYNAMIC DUOS"},{"n":"31","name":"Charles Leclerc","team":"Scuderia Ferrari HP","sub":"2026 F1® HERO"},{"n":"32","name":"Charles Leclerc","team":"Scuderia Ferrari HP","sub":"POWER IN NUMBERS"},{"n":"33","name":"Charles Leclerc","team":"Scuderia Ferrari HP","sub":"LIGHTNING LIDS"},{"n":"34","name":"Lewis Hamilton","team":"Scuderia Ferrari HP","sub":"2026 F1® HERO"},{"n":"35","name":"Lewis Hamilton","team":"Scuderia Ferrari HP","sub":"POWER IN NUMBERS"},{"n":"36","name":"Lewis Hamilton","team":"Scuderia Ferrari HP","sub":"LIGHTNING LIDS"},{"n":"37","name":"","team":"Atlassian Williams F1® Team","sub":"F1® TEAM LOGOS"},{"n":"38","name":"James Vowles","team":"Atlassian Williams F1® Team","sub":"2026 F1® TEAM PRINCIPALS"},{"n":"39","name":"Alex Albon & Carlos Sainz","team":"Atlassian Williams F1® Team","sub":"2026 F1® DYNAMIC DUOS"},{"n":"40","name":"Alex Albon","team":"Atlassian Williams F1® Team","sub":"2026 F1® HERO"},{"n":"41","name":"Alex Albon","team":"Atlassian Williams F1® Team","sub":"POWER IN NUMBERS"},{"n":"42","name":"Alex Albon","team":"Atlassian Williams F1® Team","sub":"LIGHTNING LIDS"},{"n":"43","name":"Carlos Sainz","team":"Atlassian Williams F1® Team","sub":"2026 F1® HERO"},{"n":"44","name":"Carlos Sainz","team":"Atlassian Williams F1® Team","sub":"POWER IN NUMBERS"},{"n":"45","name":"Carlos Sainz","team":"Atlassian Williams F1® Team","sub":"LIGHTNING LIDS"},{"n":"46","name":"","team":"VISA Cash App Racing Bulls Formula One™ Team","sub":"F1® TEAM LOGOS"},{"n":"47","name":"Alan Permane","team":"VISA Cash App Racing Bulls Formula One™ Team","sub":"2026 F1® TEAM PRINCIPALS"},{"n":"48","name":"Liam Lawson & Arvid Lindblad","team":"VISA Cash App Racing Bulls Formula One™ Team","sub":"2026 F1® DYNAMIC DUOS"},{"n":"49","name":"Liam Lawson","team":"VISA Cash App Racing Bulls Formula One™ Team","sub":"2026 F1® HERO"},{"n":"50","name":"Liam Lawson","team":"VISA Cash App Racing Bulls Formula One™ Team","sub":"POWER IN NUMBERS"},{"n":"51","name":"Liam Lawson","team":"VISA Cash App Racing Bulls Formula One™ Team","sub":"LIGHTNING LIDS"},{"n":"52","name":"Arvid Lindblad","team":"VISA Cash App Racing Bulls Formula One™ Team","sub":"2026 F1® HERO"},{"n":"53","name":"Arvid Lindblad","team":"VISA Cash App Racing Bulls Formula One™ Team","sub":"POWER IN NUMBERS"},{"n":"54","name":"Arvid Lindblad","team":"VISA Cash App Racing Bulls Formula One™ Team","sub":"LIGHTNING LIDS"},{"n":"55","name":"","team":"Aston Martin Aramco Formula One™ Team","sub":"F1® TEAM LOGOS"},{"n":"56","name":"Adrian Newey","team":"Aston Martin Aramco Formula One™ Team","sub":"2026 F1® TEAM PRINCIPALS"},{"n":"57","name":"Fernando Alonso & Lance Stroll","team":"Aston Martin Aramco Formula One™ Team","sub":"2026 F1® DYNAMIC DUOS"},{"n":"58","name":"Fernando Alonso","team":"Aston Martin Aramco Formula One™ Team","sub":"2026 F1® HERO"},{"n":"59","name":"Fernando Alonso","team":"Aston Martin Aramco Formula One™ Team","sub":"POWER IN NUMBERS"},{"n":"60","name":"Fernando Alonso","team":"Aston Martin Aramco Formula One™ Team","sub":"LIGHTNING LIDS"},{"n":"61","name":"Lance Stroll","team":"Aston Martin Aramco Formula One™ Team","sub":"2026 F1® HERO"},{"n":"62","name":"Lance Stroll","team":"Aston Martin Aramco Formula One™ Team","sub":"POWER IN NUMBERS"},{"n":"63","name":"Lance Stroll","team":"Aston Martin Aramco Formula One™ Team","sub":"LIGHTNING LIDS"},{"n":"64","name":"","team":"TGR Haas F1® Team","sub":"F1® TEAM LOGOS"},{"n":"65","name":"Ayao Komatsu","team":"TGR Haas F1® Team","sub":"2026 F1® TEAM PRINCIPALS"},{"n":"66","name":"Oliver Bearman & Esteban Ocon","team":"TGR Haas F1® Team","sub":"2026 F1® DYNAMIC DUOS"},{"n":"67","name":"Oliver Bearman","team":"TGR Haas F1® Team","sub":"2026 F1® HERO"},{"n":"68","name":"Oliver Bearman","team":"TGR Haas F1® Team","sub":"POWER IN NUMBERS"},{"n":"69","name":"Oliver Bearman","team":"TGR Haas F1® Team","sub":"LIGHTNING LIDS"},{"n":"70","name":"Esteban Ocon","team":"TGR Haas F1® Team","sub":"2026 F1® HERO"},{"n":"71","name":"Esteban Ocon","team":"TGR Haas F1® Team","sub":"POWER IN NUMBERS"},{"n":"72","name":"Esteban Ocon","team":"TGR Haas F1® Team","sub":"LIGHTNING LIDS"},{"n":"73","name":"","team":"Audi Revolut F1® Team","sub":"F1® TEAM LOGOS"},{"n":"74","name":"Mattia Binotto","team":"Audi Revolut F1® Team","sub":"2026 F1® TEAM PRINCIPALS"},{"n":"75","name":"Nico Hulkenberg & Gabriel Bortoleto","team":"Audi Revolut F1® Team","sub":"2026 F1® DYNAMIC DUOS"},{"n":"76","name":"Nico Hulkenberg","team":"Audi Revolut F1® Team","sub":"2026 F1® HERO"},{"n":"77","name":"Nico Hulkenberg","team":"Audi Revolut F1® Team","sub":"POWER IN NUMBERS"},{"n":"78","name":"Nico Hulkenberg","team":"Audi Revolut F1® Team","sub":"LIGHTNING LIDS"},{"n":"79","name":"Gabriel Bortoleto","team":"Audi Revolut F1® Team","sub":"2026 F1® HERO"},{"n":"80","name":"Gabriel Bortoleto","team":"Audi Revolut F1® Team","sub":"POWER IN NUMBERS"},{"n":"81","name":"Gabriel Bortoleto","team":"Audi Revolut F1® Team","sub":"LIGHTNING LIDS"},{"n":"82","name":"","team":"BWT Alpine Formula One™ Team","sub":"F1® TEAM LOGOS"},{"n":"83","name":"Steve Nielsen","team":"BWT Alpine Formula One™ Team","sub":"2026 F1® TEAM PRINCIPALS"},{"n":"84","name":"Pierre Gasly & Franco Colapinto","team":"BWT Alpine Formula One™ Team","sub":"2026 F1® DYNAMIC DUOS"},{"n":"85","name":"Pierre Gasly","team":"BWT Alpine Formula One™ Team","sub":"2026 F1® HERO"},{"n":"86","name":"Pierre Gasly","team":"BWT Alpine Formula One™ Team","sub":"POWER IN NUMBERS"},{"n":"87","name":"Pierre Gasly","team":"BWT Alpine Formula One™ Team","sub":"LIGHTNING LIDS"},{"n":"88","name":"Franco Colapinto","team":"BWT Alpine Formula One™ Team","sub":"2026 F1® HERO"},{"n":"89","name":"Franco Colapinto","team":"BWT Alpine Formula One™ Team","sub":"POWER IN NUMBERS"},{"n":"90","name":"Franco Colapinto","team":"BWT Alpine Formula One™ Team","sub":"LIGHTNING LIDS"},{"n":"91","name":"","team":"Cadillac Formula 1® Team","sub":"F1® TEAM LOGOS"},{"n":"92","name":"Graeme Lowdon","team":"Cadillac Formula 1® Team","sub":"2026 F1® TEAM PRINCIPALS"},{"n":"93","name":"Sergio Perez & Valtteri Bottas","team":"Cadillac Formula 1® Team","sub":"2026 F1® DYNAMIC DUOS"},{"n":"94","name":"Sergio Perez","team":"Cadillac Formula 1® Team","sub":"2026 F1® HERO"},{"n":"95","name":"Sergio Perez","team":"Cadillac Formula 1® Team","sub":"POWER IN NUMBERS"},{"n":"96","name":"Sergio Perez","team":"Cadillac Formula 1® Team","sub":"LIGHTNING LIDS"},{"n":"97","name":"Valtteri Bottas","team":"Cadillac Formula 1® Team","sub":"2026 F1® HERO"},{"n":"98","name":"Valtteri Bottas","team":"Cadillac Formula 1® Team","sub":"POWER IN NUMBERS"},{"n":"99","name":"Valtteri Bottas","team":"Cadillac Formula 1® Team","sub":"LIGHTNING LIDS"},{"n":"100","name":"Lewis Hamilton","team":"Scuderia Ferrari HP","sub":"EPIC MOMENTS"},{"n":"101","name":"Kimi Antonelli","team":"Mercedes-AMG PETRONAS Formula 1® Team","sub":"EPIC MOMENTS"},{"n":"102","name":"Max Verstappen","team":"Oracle Red Bull Racing","sub":"EPIC MOMENTS"},{"n":"103","name":"George Russell","team":"Mercedes-AMG PETRONAS Formula 1® Team","sub":"EPIC MOMENTS"},{"n":"104","name":"Kimi Antonelli","team":"Mercedes-AMG PETRONAS Formula 1® Team","sub":"EPIC MOMENTS"},{"n":"105","name":"Lando Norris","team":"McLaren Mastercard Formula 1® Team","sub":"EPIC MOMENTS"},{"n":"106","name":"Nico Hulkenberg","team":"KICK Sauber F1® Team","sub":"EPIC MOMENTS"},{"n":"107","name":"Oscar Piastri","team":"McLaren Mastercard Formula 1® Team","sub":"EPIC MOMENTS"},{"n":"108","name":"Charles Leclerc","team":"Scuderia Ferrari HP","sub":"EPIC MOMENTS"},{"n":"109","name":"Lando Norris","team":"McLaren Mastercard Formula 1® Team","sub":"EPIC MOMENTS"},{"n":"110","name":"Isack Hadjar","team":"VISA Cash App Racing Bulls Formula One™ Team","sub":"EPIC MOMENTS"},{"n":"111","name":"Max Verstappen","team":"Oracle Red Bull Racing","sub":"EPIC MOMENTS"},{"n":"112","name":"Carlos Sainz","team":"Atlassian Williams F1® Team","sub":"EPIC MOMENTS"},{"n":"113","name":"Liam Lawson","team":"VISA Cash App Racing Bulls Formula One™ Team","sub":"EPIC MOMENTS"},{"n":"114","name":"Oliver Bearman","team":"TGR Haas F1® Team","sub":"EPIC MOMENTS"},{"n":"115","name":"Kimi Antonelli","team":"Mercedes-AMG PETRONAS Formula 1® Team","sub":"EPIC MOMENTS"},{"n":"116","name":"Carlos Sainz","team":"Atlassian Williams F1® Team","sub":"EPIC MOMENTS"},{"n":"117","name":"Lando Norris","team":"McLaren Mastercard Formula 1® Team","sub":"EPIC MOMENTS"},{"n":"118","name":"Oscar Piastri","team":"McLaren Mastercard Formula 1® Team","sub":"SPEED SILHOUETTES"},{"n":"119","name":"George Russell","team":"Mercedes-AMG PETRONAS Formula 1® Team","sub":"SPEED SILHOUETTES"},{"n":"120","name":"Kimi Antonelli","team":"Mercedes-AMG PETRONAS Formula 1® Team","sub":"SPEED SILHOUETTES"},{"n":"121","name":"Charles Leclerc","team":"Scuderia Ferrari HP","sub":"SPEED SILHOUETTES"},{"n":"122","name":"Alex Albon","team":"Atlassian Williams F1® Team","sub":"SPEED SILHOUETTES"},{"n":"123","name":"Carlos Sainz","team":"Atlassian Williams F1® Team","sub":"SPEED SILHOUETTES"},{"n":"124","name":"Liam Lawson","team":"VISA Cash App Racing Bulls Formula One™ Team","sub":"SPEED SILHOUETTES"},{"n":"125","name":"Arvid Lindblad","team":"VISA Cash App Racing Bulls Formula One™ Team","sub":"SPEED SILHOUETTES"},{"n":"126","name":"Fernando Alonso","team":"Aston Martin Aramco Formula One™ Team","sub":"SPEED SILHOUETTES"},{"n":"127","name":"Lance Stroll","team":"Aston Martin Aramco Formula One™ Team","sub":"SPEED SILHOUETTES"},{"n":"128","name":"Oliver Bearman","team":"TGR Haas F1® Team","sub":"SPEED SILHOUETTES"},{"n":"129","name":"Esteban Ocon","team":"TGR Haas F1® Team","sub":"SPEED SILHOUETTES"},{"n":"130","name":"Nico Hulkenberg","team":"Audi Revolut F1® Team","sub":"SPEED SILHOUETTES"},{"n":"131","name":"Gabriel Bortoleto","team":"Audi Revolut F1® Team","sub":"SPEED SILHOUETTES"},{"n":"132","name":"Pierre Gasly","team":"BWT Alpine Formula One™ Team","sub":"SPEED SILHOUETTES"},{"n":"133","name":"Franco Colapinto","team":"BWT Alpine Formula One™ Team","sub":"SPEED SILHOUETTES"},{"n":"134","name":"Sergio Perez","team":"Cadillac Formula 1® Team","sub":"SPEED SILHOUETTES"},{"n":"135","name":"Valtteri Bottas","team":"Cadillac Formula 1® Team","sub":"SPEED SILHOUETTES"},{"n":"136","name":"Sir Stirling Moss","team":"","sub":"LEGENDS OF THE GRID"},{"n":"137","name":"Sir Jack Brabham","team":"","sub":"LEGENDS OF THE GRID"},{"n":"138","name":"Graham Hill","team":"","sub":"LEGENDS OF THE GRID"},{"n":"139","name":"Sir Jackie Stewart","team":"","sub":"LEGENDS OF THE GRID"},{"n":"140","name":"Emerson Fittipaldi","team":"","sub":"LEGENDS OF THE GRID"},{"n":"141","name":"Jody Scheckter","team":"","sub":"LEGENDS OF THE GRID"},{"n":"142","name":"Riccardo Patrese","team":"","sub":"LEGENDS OF THE GRID"},{"n":"143","name":"Nigel Mansell","team":"","sub":"LEGENDS OF THE GRID"},{"n":"144","name":"Alain Prost","team":"","sub":"LEGENDS OF THE GRID"},{"n":"145","name":"Mika Häkkinen","team":"","sub":"LEGENDS OF THE GRID"},{"n":"146","name":"Michael Schumacher","team":"","sub":"LEGENDS OF THE GRID"},{"n":"147","name":"Damon Hill","team":"","sub":"LEGENDS OF THE GRID"},{"n":"148","name":"Rubens Barrichello","team":"","sub":"LEGENDS OF THE GRID"},{"n":"149","name":"Kimi Räikkönen","team":"","sub":"LEGENDS OF THE GRID"},{"n":"150","name":"Mark Webber","team":"","sub":"LEGENDS OF THE GRID"},{"n":"151","name":"Max Verstappen","team":"Oracle Red Bull Racing","sub":"2025 F1® SPRINT SUPERSTARS"},{"n":"152","name":"George Russell","team":"Mercedes-AMG PETRONAS Formula 1® Team","sub":"2025 F1® SPRINT SUPERSTARS"},{"n":"153","name":"Lando Norris","team":"McLaren Mastercard Formula 1® Team","sub":"2025 F1® SPRINT SUPERSTARS"},{"n":"154","name":"Oscar Piastri","team":"McLaren Mastercard Formula 1® Team","sub":"2025 F1® SPRINT SUPERSTARS"},{"n":"155","name":"Lewis Hamilton","team":"Scuderia Ferrari HP","sub":"2025 F1® SPRINT SUPERSTARS"},{"n":"156","name":"Kimi Antonelli","team":"Mercedes-AMG PETRONAS Formula 1® Team","sub":"2025 F1® SPRINT SUPERSTARS"},{"n":"157","name":"Fernando Alonso","team":"Aston Martin Aramco Formula One™ Team","sub":"DRIVERCORE"},{"n":"158","name":"Lewis Hamilton","team":"Scuderia Ferrari HP","sub":"DRIVERCORE"},{"n":"159","name":"Sergio Perez","team":"Cadillac Formula 1® Team","sub":"DRIVERCORE"},{"n":"160","name":"Nico Hulkenberg","team":"Audi Revolut F1® Team","sub":"DRIVERCORE"},{"n":"161","name":"Valtteri Bottas","team":"Cadillac Formula 1® Team","sub":"DRIVERCORE"},{"n":"162","name":"Max Verstappen","team":"Oracle Red Bull Racing","sub":"DRIVERCORE"},{"n":"163","name":"Carlos Sainz","team":"Atlassian Williams F1® Team","sub":"DRIVERCORE"},{"n":"164","name":"Lance Stroll","team":"Aston Martin Aramco Formula One™ Team","sub":"DRIVERCORE"},{"n":"165","name":"Esteban Ocon","team":"TGR Haas F1® Team","sub":"DRIVERCORE"},{"n":"166","name":"Pierre Gasly","team":"BWT Alpine Formula One™ Team","sub":"DRIVERCORE"},{"n":"167","name":"Charles Leclerc","team":"Scuderia Ferrari HP","sub":"DRIVERCORE"},{"n":"168","name":"Lando Norris","team":"McLaren Mastercard Formula 1® Team","sub":"DRIVERCORE"},{"n":"169","name":"George Russell","team":"Mercedes-AMG PETRONAS Formula 1® Team","sub":"DRIVERCORE"},{"n":"170","name":"Alex Albon","team":"Atlassian Williams F1® Team","sub":"DRIVERCORE"},{"n":"171","name":"Oscar Piastri","team":"McLaren Mastercard Formula 1® Team","sub":"DRIVERCORE"},{"n":"172","name":"Liam Lawson","team":"VISA Cash App Racing Bulls Formula One™ Team","sub":"DRIVERCORE"},{"n":"173","name":"Oliver Bearman","team":"TGR Haas F1® Team","sub":"DRIVERCORE"},{"n":"174","name":"Franco Colapinto","team":"BWT Alpine Formula One™ Team","sub":"DRIVERCORE"},{"n":"175","name":"Kimi Antonelli","team":"Mercedes-AMG PETRONAS Formula 1® Team","sub":"DRIVERCORE"},{"n":"176","name":"Gabriel Bortoleto","team":"Audi Revolut F1® Team","sub":"DRIVERCORE"},{"n":"177","name":"Isack Hadjar","team":"Oracle Red Bull Racing","sub":"DRIVERCORE"},{"n":"178","name":"Rubens Barrichello","team":"","sub":"DRIVERCORE"},{"n":"179","name":"Oscar Piastri","team":"McLaren Mastercard Formula 1® Team","sub":"NIGHT SHIFT"},{"n":"180","name":"Isack Hadjar","team":"Oracle Red Bull Racing","sub":"NIGHT SHIFT"},{"n":"181","name":"Oliver Bearman","team":"TGR Haas F1® Team","sub":"NIGHT SHIFT"},{"n":"182","name":"Gabriel Bortoleto","team":"Audi Revolut F1® Team","sub":"NIGHT SHIFT"},{"n":"183","name":"Franco Colapinto","team":"BWT Alpine Formula One™ Team","sub":"NIGHT SHIFT"},{"n":"184","name":"Lando Norris","team":"McLaren Mastercard Formula 1® Team","sub":"2026 F1® CAR"},{"n":"185","name":"Max Verstappen","team":"Oracle Red Bull Racing","sub":"2026 F1® CAR"},{"n":"186","name":"Oscar Piastri","team":"McLaren Mastercard Formula 1® Team","sub":"2026 F1® CAR"},{"n":"187","name":"George Russell","team":"Mercedes-AMG PETRONAS Formula 1® Team","sub":"2026 F1® CAR"},{"n":"188","name":"Charles Leclerc","team":"Scuderia Ferrari HP","sub":"2026 F1® CAR"},{"n":"189","name":"Lewis Hamilton","team":"Scuderia Ferrari HP","sub":"2026 F1® CAR"},{"n":"190","name":"Kimi Antonelli","team":"Mercedes-AMG PETRONAS Formula 1® Team","sub":"2026 F1® CAR"},{"n":"191","name":"Alex Albon","team":"Atlassian Williams F1® Team","sub":"2026 F1® CAR"},{"n":"192","name":"Carlos Sainz","team":"Atlassian Williams F1® Team","sub":"2026 F1® CAR"},{"n":"193","name":"Fernando Alonso","team":"Aston Martin Aramco Formula One™ Team","sub":"2026 F1® CAR"},{"n":"194","name":"Nico Hulkenberg","team":"Audi Revolut F1® Team","sub":"2026 F1® CAR"},{"n":"195","name":"Isack Hadjar","team":"Oracle Red Bull Racing","sub":"2026 F1® CAR"},{"n":"196","name":"Oliver Bearman","team":"TGR Haas F1® Team","sub":"2026 F1® CAR"},{"n":"197","name":"Liam Lawson","team":"VISA Cash App Racing Bulls Formula One™ Team","sub":"2026 F1® CAR"},{"n":"198","name":"Esteban Ocon","team":"TGR Haas F1® Team","sub":"2026 F1® CAR"},{"n":"199","name":"Lance Stroll","team":"Aston Martin Aramco Formula One™ Team","sub":"2026 F1® CAR"},{"n":"200","name":"Pierre Gasly","team":"BWT Alpine Formula One™ Team","sub":"2026 F1® CAR"},{"n":"201","name":"Gabriel Bortoleto","team":"Audi Revolut F1® Team","sub":"2026 F1® CAR"},{"n":"202","name":"Franco Colapinto","team":"BWT Alpine Formula One™ Team","sub":"2026 F1® CAR"},{"n":"203","name":"Sergio Perez","team":"Cadillac Formula 1® Team","sub":"2026 F1® CAR"},{"n":"204","name":"Valtteri Bottas","team":"Cadillac Formula 1® Team","sub":"2026 F1® CAR"},{"n":"205","name":"Arvid Lindblad","team":"VISA Cash App Racing Bulls Formula One™ Team","sub":"2026 F1® CAR"},{"n":"206","name":"Lando Norris","team":"McLaren Mastercard Formula 1® Team","sub":"LA MONUMENTAL"},{"n":"207","name":"Oscar Piastri","team":"McLaren Mastercard Formula 1® Team","sub":"LA MONUMENTAL"},{"n":"208","name":"George Russell","team":"Mercedes-AMG PETRONAS Formula 1® Team","sub":"LA MONUMENTAL"},{"n":"209","name":"Kimi Antonelli","team":"Mercedes-AMG PETRONAS Formula 1® Team","sub":"LA MONUMENTAL"},{"n":"210","name":"Max Verstappen","team":"Oracle Red Bull Racing","sub":"LA MONUMENTAL"},{"n":"211","name":"Isack Hadjar","team":"Oracle Red Bull Racing","sub":"LA MONUMENTAL"},{"n":"212","name":"Charles Leclerc","team":"Scuderia Ferrari HP","sub":"LA MONUMENTAL"},{"n":"213","name":"Lewis Hamilton","team":"Scuderia Ferrari HP","sub":"LA MONUMENTAL"},{"n":"214","name":"Alex Albon","team":"Atlassian Williams F1® Team","sub":"LA MONUMENTAL"},{"n":"215","name":"Carlos Sainz","team":"Atlassian Williams F1® Team","sub":"LA MONUMENTAL"},{"n":"216","name":"Liam Lawson","team":"VISA Cash App Racing Bulls Formula One™ Team","sub":"LA MONUMENTAL"},{"n":"217","name":"Arvid Lindblad","team":"VISA Cash App Racing Bulls Formula One™ Team","sub":"LA MONUMENTAL"},{"n":"218","name":"Fernando Alonso","team":"Aston Martin Aramco Formula One™ Team","sub":"LA MONUMENTAL"},{"n":"219","name":"Lance Stroll","team":"Aston Martin Aramco Formula One™ Team","sub":"LA MONUMENTAL"},{"n":"220","name":"Oliver Bearman","team":"TGR Haas F1® Team","sub":"LA MONUMENTAL"},{"n":"221","name":"Esteban Ocon","team":"TGR Haas F1® Team","sub":"LA MONUMENTAL"},{"n":"222","name":"Nico Hulkenberg","team":"Audi Revolut F1® Team","sub":"LA MONUMENTAL"},{"n":"223","name":"Gabriel Bortoleto","team":"Audi Revolut F1® Team","sub":"LA MONUMENTAL"},{"n":"224","name":"Pierre Gasly","team":"BWT Alpine Formula One™ Team","sub":"LA MONUMENTAL"},{"n":"225","name":"Franco Colapinto","team":"BWT Alpine Formula One™ Team","sub":"LA MONUMENTAL"},{"n":"226","name":"Sergio Perez","team":"Cadillac Formula 1® Team","sub":"LA MONUMENTAL"},{"n":"227","name":"Valtteri Bottas","team":"Cadillac Formula 1® Team","sub":"LA MONUMENTAL"},{"n":"228","name":"Lando Norris","team":"McLaren Mastercard Formula 1® Team","sub":"F1® TURBO ATTAX LEGACY"},{"n":"229","name":"Oscar Piastri","team":"McLaren Mastercard Formula 1® Team","sub":"F1® TURBO ATTAX LEGACY"},{"n":"230","name":"George Russell","team":"Mercedes-AMG PETRONAS Formula 1® Team","sub":"F1® TURBO ATTAX LEGACY"},{"n":"231","name":"Kimi Antonelli","team":"Mercedes-AMG PETRONAS Formula 1® Team","sub":"F1® TURBO ATTAX LEGACY"},{"n":"232","name":"Max Verstappen","team":"Oracle Red Bull Racing","sub":"F1® TURBO ATTAX LEGACY"},{"n":"233","name":"Isack Hadjar","team":"Oracle Red Bull Racing","sub":"F1® TURBO ATTAX LEGACY"},{"n":"234","name":"Charles Leclerc","team":"Scuderia Ferrari HP","sub":"F1® TURBO ATTAX LEGACY"},{"n":"235","name":"Lewis Hamilton","team":"Scuderia Ferrari HP","sub":"F1® TURBO ATTAX LEGACY"},{"n":"236","name":"Alex Albon","team":"Atlassian Williams F1® Team","sub":"F1® TURBO ATTAX LEGACY"},{"n":"237","name":"Carlos Sainz","team":"Atlassian Williams F1® Team","sub":"F1® TURBO ATTAX LEGACY"},{"n":"238","name":"Liam Lawson","team":"VISA Cash App Racing Bulls Formula One™ Team","sub":"F1® TURBO ATTAX LEGACY"},{"n":"239","name":"Arvid Lindblad","team":"VISA Cash App Racing Bulls Formula One™ Team","sub":"F1® TURBO ATTAX LEGACY"},{"n":"240","name":"Fernando Alonso","team":"Aston Martin Aramco Formula One™ Team","sub":"F1® TURBO ATTAX LEGACY"},{"n":"241","name":"Lance Stroll","team":"Aston Martin Aramco Formula One™ Team","sub":"F1® TURBO ATTAX LEGACY"},{"n":"242","name":"Oliver Bearman","team":"TGR Haas F1® Team","sub":"F1® TURBO ATTAX LEGACY"},{"n":"243","name":"Esteban Ocon","team":"TGR Haas F1® Team","sub":"F1® TURBO ATTAX LEGACY"},{"n":"244","name":"Nico Hulkenberg","team":"Audi Revolut F1® Team","sub":"F1® TURBO ATTAX LEGACY"},{"n":"245","name":"Gabriel Bortoleto","team":"Audi Revolut F1® Team","sub":"F1® TURBO ATTAX LEGACY"},{"n":"246","name":"Pierre Gasly","team":"BWT Alpine Formula One™ Team","sub":"F1® TURBO ATTAX LEGACY"},{"n":"247","name":"Franco Colapinto","team":"BWT Alpine Formula One™ Team","sub":"F1® TURBO ATTAX LEGACY"},{"n":"248","name":"Sergio Perez","team":"Cadillac Formula 1® Team","sub":"F1® TURBO ATTAX LEGACY"},{"n":"249","name":"Valtteri Bottas","team":"Cadillac Formula 1® Team","sub":"F1® TURBO ATTAX LEGACY"},{"n":"250","name":"Lando Norris","team":"McLaren Mastercard Formula 1® Team","sub":"CHAMPIONS"},{"n":"251","name":"Leonardo Fornaroli","team":"Invicta Racing","sub":"CHAMPIONS"},{"n":"252","name":"Rafael Câmara","team":"Trident","sub":"CHAMPIONS"},{"n":"253","name":"Richard Verschoor","team":"MP Motorsport","sub":"10 YEARS OF F2™ - MOST SUCCESSFUL"},{"n":"254","name":"Joshua Dürksen","team":"Invicta Racing","sub":"F2™ ONE TO WATCH"},{"n":"255","name":"Colton Herta","team":"Hitech TGR","sub":"F2™ ONE TO WATCH"},{"n":"256","name":"Nikola Tsolov","team":"Campos Racing","sub":"F2™ ONE TO WATCH"},{"n":"257","name":"Dino Beganovic","team":"DAMS Lucas Oil","sub":"F2™ ONE TO WATCH"},{"n":"258","name":"Gabriele Minì","team":"MP Motorsport","sub":"F2™ ONE TO WATCH"},{"n":"259","name":"Mari Boya","team":"PREMA Racing","sub":"F2™ ONE TO WATCH"},{"n":"260","name":"Alexander Dunne","team":"Rodin Motorsport","sub":"F2™ ONE TO WATCH"},{"n":"261","name":"Kush Maini","team":"ART Grand Prix","sub":"F2™ ONE TO WATCH"},{"n":"262","name":"Emerson Fittipaldi","team":"AIX Racing","sub":"F2™ ONE TO WATCH"},{"n":"263","name":"Nico Varrone","team":"Van Amersfoort Racing","sub":"F2™ ONE TO WATCH"},{"n":"264","name":"2026 F1® Car","team":"","sub":"TECHNICAL DRAWING"},{"n":"265","name":"Lando Norris","team":"McLaren Mastercard Formula 1® Team","sub":"SIGNATURE STYLE"},{"n":"266","name":"Oscar Piastri","team":"McLaren Mastercard Formula 1® Team","sub":"SIGNATURE STYLE"},{"n":"267","name":"George Russell","team":"Mercedes-AMG PETRONAS Formula 1® Team","sub":"SIGNATURE STYLE"},{"n":"268","name":"Kimi Antonelli","team":"Mercedes-AMG PETRONAS Formula 1® Team","sub":"SIGNATURE STYLE"},{"n":"269","name":"Max Verstappen","team":"Oracle Red Bull Racing","sub":"SIGNATURE STYLE"},{"n":"270","name":"Isack Hadjar","team":"Oracle Red Bull Racing","sub":"SIGNATURE STYLE"},{"n":"271","name":"Charles Leclerc","team":"Scuderia Ferrari HP","sub":"SIGNATURE STYLE"},{"n":"272","name":"Lewis Hamilton","team":"Scuderia Ferrari HP","sub":"SIGNATURE STYLE"},{"n":"273","name":"Alex Albon","team":"Atlassian Williams F1® Team","sub":"SIGNATURE STYLE"},{"n":"274","name":"Carlos Sainz","team":"Atlassian Williams F1® Team","sub":"SIGNATURE STYLE"},{"n":"275","name":"Liam Lawson","team":"VISA Cash App Racing Bulls Formula One™ Team","sub":"SIGNATURE STYLE"},{"n":"276","name":"Arvid Lindblad","team":"VISA Cash App Racing Bulls Formula One™ Team","sub":"SIGNATURE STYLE"},{"n":"277","name":"Fernando Alonso","team":"Aston Martin Aramco Formula One™ Team","sub":"SIGNATURE STYLE"},{"n":"278","name":"Lance Stroll","team":"Aston Martin Aramco Formula One™ Team","sub":"SIGNATURE STYLE"},{"n":"279","name":"Oliver Bearman","team":"TGR Haas F1® Team","sub":"SIGNATURE STYLE"},{"n":"280","name":"Esteban Ocon","team":"TGR Haas F1® Team","sub":"SIGNATURE STYLE"},{"n":"281","name":"Nico Hulkenberg","team":"Audi Revolut F1® Team","sub":"SIGNATURE STYLE"},{"n":"282","name":"Gabriel Bortoleto","team":"Audi Revolut F1® Team","sub":"SIGNATURE STYLE"},{"n":"283","name":"Pierre Gasly","team":"BWT Alpine Formula One™ Team","sub":"SIGNATURE STYLE"},{"n":"284","name":"Franco Colapinto","team":"BWT Alpine Formula One™ Team","sub":"SIGNATURE STYLE"},{"n":"285","name":"Sergio Perez","team":"Cadillac Formula 1® Team","sub":"SIGNATURE STYLE"},{"n":"286","name":"Valtteri Bottas","team":"Cadillac Formula 1® Team","sub":"SIGNATURE STYLE"},{"n":"287","name":"Sir Jackie Stewart","team":"","sub":"SIGNATURE STYLE"},{"n":"288","name":"Mika Häkkinen","team":"","sub":"SIGNATURE STYLE"},{"n":"289","name":"Sir Stirling Moss","team":"","sub":"100 CLUB (LEGEND)"},{"n":"290","name":"Graham Hill","team":"","sub":"100 CLUB (LEGEND)"},{"n":"291","name":"Alain Prost","team":"","sub":"100 CLUB (LEGEND)"},{"n":"292","name":"Rubens Barrichello","team":"","sub":"100 CLUB (LEGEND)"},{"n":"293","name":"Lando Norris","team":"McLaren Mastercard Formula 1® Team","sub":"100 CLUB"},{"n":"294","name":"George Russell","team":"Mercedes-AMG PETRONAS Formula 1® Team","sub":"100 CLUB"},{"n":"295","name":"Max Verstappen","team":"Oracle Red Bull Racing","sub":"100 CLUB"},{"n":"296","name":"Carlos Sainz","team":"Atlassian Williams F1® Team","sub":"100 CLUB"},{"n":"297","name":"Oliver Bearman","team":"TGR Haas F1® Team","sub":"100 CLUB"},{"n":"298","name":"Nigel Mansell","team":"","sub":"BLACK EDGE"},{"n":"299","name":"Damon Hill","team":"","sub":"BLACK EDGE"},{"n":"300","name":"Kimi Räikkönen","team":"","sub":"BLACK EDGE"},{"n":"301","name":"Oscar Piastri","team":"McLaren Mastercard Formula 1® Team","sub":"BLACK EDGE"},{"n":"302","name":"Lewis Hamilton","team":"Scuderia Ferrari HP","sub":"BLACK EDGE"},{"n":"303","name":"Alex Albon","team":"Atlassian Williams F1® Team","sub":"BLACK EDGE"},{"n":"304","name":"Fernando Alonso","team":"Aston Martin Aramco Formula One™ Team","sub":"BLACK EDGE"},{"n":"305","name":"Esteban Ocon","team":"TGR Haas F1® Team","sub":"BLACK EDGE"},{"n":"306","name":"Sergio Perez","team":"Cadillac Formula 1® Team","sub":"BLACK EDGE"},{"n":"307","name":"Lando Norris","team":"McLaren Mastercard Formula 1® Team","sub":"DIAMOND INFINITY"},{"n":"308","name":"George Russell","team":"Mercedes-AMG PETRONAS Formula 1® Team","sub":"DIAMOND INFINITY"},{"n":"309","name":"Isack Hadjar","team":"Oracle Red Bull Racing","sub":"DIAMOND INFINITY"},{"n":"310","name":"Charles Leclerc","team":"Scuderia Ferrari HP","sub":"DIAMOND INFINITY"},{"n":"311","name":"Carlos Sainz","team":"Atlassian Williams F1® Team","sub":"DIAMOND INFINITY"},{"n":"312","name":"Arvid Lindblad","team":"VISA Cash App Racing Bulls Formula One™ Team","sub":"DIAMOND INFINITY"},{"n":"313","name":"Nico Hulkenberg","team":"Audi Revolut F1® Team","sub":"DIAMOND INFINITY"},{"n":"314","name":"Pierre Gasly","team":"BWT Alpine Formula One™ Team","sub":"DIAMOND INFINITY"},{"n":"315","name":"Valtteri Bottas","team":"Cadillac Formula 1® Team","sub":"DIAMOND INFINITY"},{"n":"316","name":"Lando Norris","team":"McLaren Mastercard Formula 1® Team","sub":"TURBO CHROME"},{"n":"317","name":"Oscar Piastri","team":"McLaren Mastercard Formula 1® Team","sub":"TURBO CHROME"},{"n":"318","name":"George Russell","team":"Mercedes-AMG PETRONAS Formula 1® Team","sub":"TURBO CHROME"},{"n":"319","name":"Kimi Antonelli","team":"Mercedes-AMG PETRONAS Formula 1® Team","sub":"TURBO CHROME"},{"n":"320","name":"Max Verstappen","team":"Oracle Red Bull Racing","sub":"TURBO CHROME"},{"n":"321","name":"Isack Hadjar","team":"Oracle Red Bull Racing","sub":"TURBO CHROME"},{"n":"322","name":"Charles Leclerc","team":"Scuderia Ferrari HP","sub":"TURBO CHROME"},{"n":"323","name":"Lewis Hamilton","team":"Scuderia Ferrari HP","sub":"TURBO CHROME"},{"n":"324","name":"Alex Albon","team":"Atlassian Williams F1® Team","sub":"TURBO CHROME"},{"n":"325","name":"Carlos Sainz","team":"Atlassian Williams F1® Team","sub":"TURBO CHROME"},{"n":"326","name":"Liam Lawson","team":"VISA Cash App Racing Bulls Formula One™ Team","sub":"TURBO CHROME"},{"n":"327","name":"Arvid Lindblad","team":"VISA Cash App Racing Bulls Formula One™ Team","sub":"TURBO CHROME"},{"n":"328","name":"Fernando Alonso","team":"Aston Martin Aramco Formula One™ Team","sub":"TURBO CHROME"},{"n":"329","name":"Lance Stroll","team":"Aston Martin Aramco Formula One™ Team","sub":"TURBO CHROME"},{"n":"330","name":"Oliver Bearman","team":"TGR Haas F1® Team","sub":"TURBO CHROME"},{"n":"331","name":"Esteban Ocon","team":"TGR Haas F1® Team","sub":"TURBO CHROME"},{"n":"332","name":"Nico Hulkenberg","team":"Audi Revolut F1® Team","sub":"TURBO CHROME"},{"n":"333","name":"Gabriel Bortoleto","team":"Audi Revolut F1® Team","sub":"TURBO CHROME"},{"n":"334","name":"Pierre Gasly","team":"BWT Alpine Formula One™ Team","sub":"TURBO CHROME"},{"n":"335","name":"Franco Colapinto","team":"BWT Alpine Formula One™ Team","sub":"TURBO CHROME"},{"n":"336","name":"Sergio Perez","team":"Cadillac Formula 1® Team","sub":"TURBO CHROME"},{"n":"337","name":"Valtteri Bottas","team":"Cadillac Formula 1® Team","sub":"TURBO CHROME"},{"n":"338","name":"Sir Stirling Moss","team":"","sub":"TURBO CHROME"},{"n":"339","name":"Michael Schumacher","team":"","sub":"TURBO CHROME"},{"n":"340","name":"Mark Webber","team":"","sub":"TURBO CHROME"},{"n":"341","name":"Lewis Hamilton","team":"Scuderia Ferrari HP","sub":"THE WINNING FORMULA"},{"n":"342","name":"Agent, Slow Pit Stop, Fast Pit Stop & Overtake Block","team":"","sub":"STRATEGY CARD"},{"n":"343","name":"Lando Norris","team":"McLaren Mastercard Formula 1® Team","sub":"F1® GOLD"},{"n":"344","name":"George Russell","team":"Mercedes-AMG PETRONAS Formula 1® Team","sub":"F1® GOLD"},{"n":"345","name":"Max Verstappen","team":"Oracle Red Bull Racing","sub":"F1® GOLD"},{"n":"346","name":"Charles Leclerc","team":"Scuderia Ferrari HP","sub":"F1® GOLD"},{"n":"347","name":"Alex Albon","team":"Atlassian Williams F1® Team","sub":"F1® GOLD"},{"n":"348","name":"Liam Lawson","team":"VISA Cash App Racing Bulls Formula One™ Team","sub":"F1® GOLD"},{"n":"349","name":"Fernando Alonso","team":"Aston Martin Aramco Formula One™ Team","sub":"F1® GOLD"},{"n":"350","name":"Oliver Bearman","team":"TGR Haas F1® Team","sub":"F1® GOLD"},{"n":"351","name":"Nico Hulkenberg","team":"Audi Revolut F1® Team","sub":"F1® GOLD"},{"n":"352","name":"Pierre Gasly","team":"BWT Alpine Formula One™ Team","sub":"F1® GOLD"},{"n":"353","name":"Valtteri Bottas","team":"Cadillac Formula 1® Team","sub":"F1® GOLD"},{"n":"GU 1","name":"Oscar Piastri","team":"McLaren Mastercard Formula 1® Team","sub":"GUARDIANS OF THE GRID"},{"n":"GU 2","name":"George Russell","team":"Mercedes-AMG PETRONAS Formula 1® Team","sub":"GUARDIANS OF THE GRID"},{"n":"GU 3","name":"Isack Hadjar","team":"Oracle Red Bull Racing","sub":"GUARDIANS OF THE GRID"},{"n":"GU 4","name":"Lewis Hamilton","team":"Scuderia Ferrari HP","sub":"GUARDIANS OF THE GRID"},{"n":"GU 5","name":"Carlos Sainz","team":"Atlassian Williams F1® Team","sub":"GUARDIANS OF THE GRID"},{"n":"GU 6","name":"Liam Lawson","team":"VISA Cash App Racing Bulls Formula One™ Team","sub":"GUARDIANS OF THE GRID"},{"n":"GU 7","name":"Fernando Alonso","team":"Aston Martin Aramco Formula One™ Team","sub":"GUARDIANS OF THE GRID"},{"n":"GU 8","name":"Esteban Ocon","team":"TGR Haas F1® Team","sub":"GUARDIANS OF THE GRID"},{"n":"GU 9","name":"Nico Hulkenberg","team":"Audi Revolut F1® Team","sub":"GUARDIANS OF THE GRID"},{"n":"GU 10","name":"Franco Colapinto","team":"BWT Alpine Formula One™ Team","sub":"GUARDIANS OF THE GRID"},{"n":"GU 11","name":"Valtteri Bottas","team":"Cadillac Formula 1® Team","sub":"GUARDIANS OF THE GRID"},{"n":"SUN 1","name":"Lando Norris","team":"McLaren Mastercard Formula 1® Team","sub":"SUNSHINE STATE"},{"n":"SUN 2","name":"Kimi Antonelli","team":"Mercedes-AMG PETRONAS Formula 1® Team","sub":"SUNSHINE STATE"},{"n":"SUN 3","name":"Max Verstappen","team":"Oracle Red Bull Racing","sub":"SUNSHINE STATE"},{"n":"SUN 4","name":"Charles Leclerc","team":"Scuderia Ferrari HP","sub":"SUNSHINE STATE"},{"n":"SUN 5","name":"Alex Albon","team":"Atlassian Williams F1® Team","sub":"SUNSHINE STATE"},{"n":"SUN 6","name":"Arvid Lindblad","team":"VISA Cash App Racing Bulls Formula One™ Team","sub":"SUNSHINE STATE"},{"n":"SUN 7","name":"Lance Stroll","team":"Aston Martin Aramco Formula One™ Team","sub":"SUNSHINE STATE"},{"n":"SUN 8","name":"Oliver Bearman","team":"TGR Haas F1® Team","sub":"SUNSHINE STATE"},{"n":"SUN 9","name":"Gabriel Bortoleto","team":"Audi Revolut F1® Team","sub":"SUNSHINE STATE"},{"n":"SUN 10","name":"Pierre Gasly","team":"BWT Alpine Formula One™ Team","sub":"SUNSHINE STATE"},{"n":"SUN 11","name":"Sergio Perez","team":"Cadillac Formula 1® Team","sub":"SUNSHINE STATE"},{"n":"GG 1","name":"Lewis Hamilton","team":"Scuderia Ferrari HP","sub":"GREATS OF THE GRID"},{"n":"GG 2","name":"Max Verstappen","team":"Oracle Red Bull Racing","sub":"GREATS OF THE GRID"},{"n":"GG 3","name":"Fernando Alonso","team":"Aston Martin Aramco Formula One™ Team","sub":"GREATS OF THE GRID"},{"n":"GG 4","name":"Lando Norris","team":"McLaren Mastercard Formula 1® Team","sub":"GREATS OF THE GRID"},{"n":"GG 5","name":"Sir Jack Brabham","team":"","sub":"GREATS OF THE GRID"},{"n":"GG 6","name":"Sir Jackie Stewart","team":"","sub":"GREATS OF THE GRID"},{"n":"GG 7","name":"Jody Scheckter","team":"","sub":"GREATS OF THE GRID"},{"n":"GG 8","name":"Michael Schumacher","team":"","sub":"GREATS OF THE GRID"},{"n":"LE 1","name":"Oscar Piastri","team":"McLaren Mastercard Formula 1® Team","sub":"LIMITED EDITIONS"},{"n":"LE 2","name":"Carlos Sainz","team":"Atlassian Williams F1® Team","sub":"LIMITED EDITIONS"},{"n":"LE 3","name":"Max Verstappen","team":"Oracle Red Bull Racing","sub":"LIMITED EDITIONS"},{"n":"LE 4","name":"Lewis Hamilton","team":"Scuderia Ferrari HP","sub":"LIMITED EDITIONS"},{"n":"LE 5","name":"Lando Norris","team":"McLaren Mastercard Formula 1® Team","sub":"LIMITED EDITIONS"},{"n":"LE 6","name":"Charles Leclerc","team":"Scuderia Ferrari HP","sub":"LIMITED EDITIONS"},{"n":"LE 7","name":"George Russell","team":"Mercedes-AMG PETRONAS Formula 1® Team","sub":"LIMITED EDITIONS"},{"n":"LE 8","name":"Isack Hadjar","team":"Oracle Red Bull Racing","sub":"LIMITED EDITIONS"},{"n":"LE 9","name":"Sergio Perez","team":"Cadillac Formula 1® Team","sub":"LIMITED EDITIONS"},{"n":"LE 10","name":"Arvid Lindblad","team":"VISA Cash App Racing Bulls Formula One™ Team","sub":"LIMITED EDITIONS"},{"n":"LE 11","name":"Gabriel Bortoleto","team":"Audi Revolut F1® Team","sub":"LIMITED EDITIONS"},{"n":"LE 12","name":"Kimi Antonelli","team":"Mercedes-AMG PETRONAS Formula 1® Team","sub":"LIMITED EDITIONS"},{"n":"LE 13","name":"Fernando Alonso","team":"Aston Martin Aramco Formula One™ Team","sub":"LIMITED EDITIONS"},{"n":"LE 14","name":"Liam Lawson","team":"VISA Cash App Racing Bulls Formula One™ Team","sub":"LIMITED EDITIONS"},{"n":"LE 15","name":"Alex Albon","team":"Atlassian Williams F1® Team","sub":"LIMITED EDITIONS"},{"n":"LE 16","name":"Nico Hulkenberg","team":"Audi Revolut F1® Team","sub":"LIMITED EDITIONS"},{"n":"LE 17","name":"Oliver Bearman","team":"TGR Haas F1® Team","sub":"LIMITED EDITIONS"},{"n":"LE 18","name":"Valtteri Bottas","team":"Cadillac Formula 1® Team","sub":"LIMITED EDITIONS"},{"n":"BG 1","name":"Esteban Ocon","team":"TGR Haas F1® Team","sub":"BLACK GOLD LIMITED EDITION* only available via Topps.com"},{"n":"BG 2","name":"Franco Colapinto","team":"BWT Alpine Formula One™ Team","sub":"BLACK GOLD LIMITED EDITION* only available via Topps.com"},{"n":"MR-NOR","name":"Lando Norris","team":"McLaren Mastercard Formula 1® Team","sub":"MANUFACTURED RELICS"},{"n":"MR-VER","name":"Max Verstappen","team":"Oracle Red Bull Racing","sub":"MANUFACTURED RELICS"},{"n":"MR-HAM","name":"Lewis Hamilton","team":"Scuderia Ferrari HP","sub":"MANUFACTURED RELICS"},{"n":"MR-ALO","name":"Fernando Alonso","team":"Aston Martin Aramco Formula One™ Team","sub":"MANUFACTURED RELICS"},{"n":"MR-STE","name":"Sir Jackie Stewart","team":"","sub":"MANUFACTURED RELICS"},{"n":"MR-MAN","name":"Nigel Mansell","team":"","sub":"MANUFACTURED RELICS"},{"n":"MR-HAK","name":"Mika Häkkinen","team":"","sub":"MANUFACTURED RELICS"},{"n":"MR-RAI","name":"Kimi Räikkönen","team":"","sub":"MANUFACTURED RELICS"},{"n":"MR-PRO","name":"Alain Prost","team":"","sub":"MANUFACTURED RELICS"},{"n":"MR-MSC","name":"Michael Schumacher","team":"","sub":"MANUFACTURED RELICS"},{"n":"RR-PIA","name":"Oscar Piastri","team":"McLaren Mastercard Formula 1® Team","sub":"RACEDAY RELICS"},{"n":"RR-BEA","name":"Oliver Bearman","team":"TGR Haas F1® Team","sub":"RACEDAY RELICS"},{"n":"RR-RUS","name":"George Russell","team":"Mercedes-AMG PETRONAS Formula 1® Team","sub":"RACEDAY RELICS"},{"n":"RR-LEC","name":"Charles Leclerc","team":"Scuderia Ferrari HP","sub":"RACEDAY RELICS"},{"n":"RR-LAW","name":"Liam Lawson","team":"VISA Cash App Racing Bulls Formula One™ Team","sub":"RACEDAY RELICS"},{"n":"RR-GAS","name":"Pierre Gasly","team":"BWT Alpine Formula One™ Team","sub":"RACEDAY RELICS"},{"n":"RR-OCO","name":"Esteban Ocon","team":"TGR Haas F1® Team","sub":"RACEDAY RELICS"},{"n":"RR-STR","name":"Lance Stroll","team":"Aston Martin Aramco Formula One™ Team","sub":"RACEDAY RELICS"},{"n":"RR-ALB","name":"Alex Albon","team":"Atlassian Williams F1® Team","sub":"RACEDAY RELICS"},{"n":"RR-WEB","name":"Mark Webber","team":"","sub":"RACEDAY RELICS"}];
+const SUPABASE_URL = "https://gbqaptblssvsqlgsfply.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdicWFwdGJsc3N2c3FsZ3NmcGx5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI1MTAyMjAsImV4cCI6MjEwODA4NjIyMH0.MrDKFP7O5aeABlh_Hwfw5Pg66Vi3QKWVmf_QUPDPAjs";
+const SUPABASE_LIB = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js";
+const TESS_LIB = "https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js";
+const KEY = "turbo-attax-f1-2026-v1";
+const DIRTY_KEY = "turbo-attax-f1-2026-dirty";
+const SYNCED_KEY = "turbo-attax-f1-2026-synced";
+
+const EXTRA_INFO = {
+  "GUARDIANS OF THE GRID": "Mega Tin",
+  "SUNSHINE STATE": "Mega Tin",
+  "GREATS OF THE GRID": "Super Tin",
+  "LIMITED EDITIONS": "Hero Packs",
+  "BLACK GOLD LIMITED EDITION* only available via Topps.com": "Só Topps.com",
+  "MANUFACTURED RELICS": "Relic",
+  "RACEDAY RELICS": "Relic"
+};
+const $ = id => document.getElementById(id);
+const isBase = c => /^\d+$/.test(c.n);
+function norm(s) { return String(s).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase(); }
+function esc(s) { return String(s).replace(/[&<>"]/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[ch])); }
+function cleanSub(s) { return s.replace("* only available via Topps.com", "").trim(); }
+const compact = s => String(s).toLowerCase().replace(/[\s\-]/g, "");
+const BYID = {}; for (const c of CARDS) BYID[compact(c.n)] = c;
+const titleOf = c => c.name || c.team || cleanSub(c.sub);
+
+function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+function lsSet(k, v) { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } }
+
+// ---------- Coleção: nº da carta -> quantidade ----------
+class Collection {
+  constructor(src) {
+    this.onchange = null;
+    this.m = {};
+    if (Array.isArray(src)) src.forEach(n => this.m[n] = 1);
+    else if (src && typeof src === "object") for (const n in src) { const v = parseInt(src[n], 10); if (v > 0) this.m[n] = Math.min(v, 99); }
+  }
+  get(n) { return this.m[n] || 0; }
+  has(n) { return this.get(n) > 0; }
+  _ch(n) { if (this.onchange) this.onchange(n); }
+  add(n) { if (!this.has(n)) { this.m[n] = 1; this._ch(n); } }
+  delete(n) { if (this.has(n)) { delete this.m[n]; this._ch(n); } }
+  set(n, v) {
+    const old = this.get(n);
+    v = Math.max(0, Math.min(v, 99));
+    if (v > 0) this.m[n] = v; else delete this.m[n];
+    if (old !== v) this._ch(n);
+  }
+  get size() { return Object.keys(this.m).length; }
+}
+let have, dirty;
+try { have = new Collection(JSON.parse(lsGet(KEY) || "{}")); } catch (e) { have = new Collection(); }
+try { dirty = new Set(JSON.parse(lsGet(DIRTY_KEY) || "[]")); } catch (e) { dirty = new Set(); }
+if (!lsSet(KEY, JSON.stringify(have.m))) {
+  // sem armazenamento local: continua a funcionar, mas só na memória
+}
+function save() { lsSet(KEY, JSON.stringify(have.m)); }
+function saveDirty() { lsSet(DIRTY_KEY, JSON.stringify([...dirty])); }
+function attach(c) { have = c; have.onchange = markDirty; }
+attach(have);
+
+// ---------- Sincronização (Supabase) ----------
+let sb = null, session = null, syncState = "local", flushing = false, flushTimer = null;
+const CHIP_TXT = { local: "Só neste dispositivo", login: "Entrar para sincronizar", syncing: "A sincronizar…", ok: "✓ Sincronizado", error: "Falhou — tentar de novo" };
+function setState(s, msg) {
+  syncState = s;
+  const ch = $("chip");
+  ch.dataset.s = s;
+  ch.textContent = CHIP_TXT[s];
+  ch.title = msg || "";
+}
+function loadScript(src) {
+  return new Promise((res, rej) => {
+    const s = document.createElement("script");
+    s.src = src; s.onload = res; s.onerror = () => rej(new Error("Não foi possível carregar " + src));
+    document.head.appendChild(s);
+  });
+}
+function markDirty(n) { dirty.add(n); saveDirty(); scheduleFlush(); }
+function scheduleFlush() { clearTimeout(flushTimer); flushTimer = setTimeout(() => flush(false), 700); }
+
+async function flush(throwErr) {
+  if (!sb || !session || flushing || !dirty.size) return;
+  flushing = true;
+  setState("syncing");
+  const pushed = {};
+  const up = [], del = [];
+  for (const n of dirty) {
+    const q = have.get(n); pushed[n] = q;
+    if (q > 0) up.push({ user_id: session.user.id, card_id: n, qty: q }); else del.push(n);
+  }
+  try {
+    if (up.length) { const { error } = await sb.from("collection").upsert(up, { onConflict: "user_id,card_id" }); if (error) throw error; }
+    if (del.length) { const { error } = await sb.from("collection").delete().in("card_id", del); if (error) throw error; }
+    for (const n in pushed) if (have.get(n) === pushed[n]) dirty.delete(n);   // se mudou entretanto, fica para a próxima
+    saveDirty();
+    if (dirty.size) scheduleFlush(); else setState("ok");
+  } catch (e) {
+    setState("error", e.message || String(e));
+    if (throwErr) { flushing = false; throw e; }
+  }
+  flushing = false;
+}
+
+async function syncNow() {
+  if (!sb || !session) return;
+  setState("syncing");
+  try {
+    if (!lsGet(SYNCED_KEY)) { Object.keys(have.m).forEach(n => dirty.add(n)); saveDirty(); }   // 1.ª vez: envia o que já tens
+    await flush(true);
+    const { data, error } = await sb.from("collection").select("card_id,qty").range(0, 999);
+    if (error) throw error;
+    const remote = {};
+    for (const r of data) if (BYID[compact(r.card_id)] && r.qty > 0) remote[r.card_id] = r.qty;
+    for (const n of dirty) { const q = have.get(n); if (q > 0) remote[n] = q; else delete remote[n]; }   // edições feitas durante a sincronização
+    have.m = remote;
+    save(); lsSet(SYNCED_KEY, "1");
+    render();
+    setState(dirty.size ? "syncing" : "ok");
+    if (dirty.size) scheduleFlush();
+  } catch (e) { setState("error", e.message || String(e)); }
+}
+
+async function login(email, password) {
+  const { data, error } = await sb.auth.signInWithPassword({ email, password });
+  if (error) throw error;
+  session = data.session;
+  await syncNow();
+}
+async function logout() { try { await sb.auth.signOut(); } catch (e) {} session = null; setState("login"); }
+
+async function initSync() {
+  try {
+    if (!window.supabase) await loadScript(SUPABASE_LIB);
+    sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: true, autoRefreshToken: true } });
+    const { data } = await sb.auth.getSession();
+    session = data && data.session;
+    sb.auth.onAuthStateChange((ev, s) => { session = s; });
+    if (session) await syncNow(); else setState("login");
+  } catch (e) { sb = null; setState("local", e.message || String(e)); }
+}
+$("chip").addEventListener("click", () => {
+  if (!sb) { setState("syncing"); initSync(); return; }
+  if (!session) openLogin();
+  else if (syncState === "error") syncNow();
+  else if (confirm("Terminar sessão neste dispositivo? As cartas continuam guardadas na nuvem.")) logout();
+});
+window.addEventListener("online", () => { if (session) syncNow(); });
+document.addEventListener("visibilitychange", () => { if (!document.hidden && session && syncState !== "syncing") syncNow(); });
+
+// ---------- Janelas e avisos ----------
+function modal(inner) {
+  const m = document.createElement("div");
+  m.className = "modal";
+  m.innerHTML = `<div class="box">${inner}</div>`;
+  function close() { m.remove(); document.removeEventListener("keydown", onKey); }
+  function onKey(e) { if (e.key === "Escape") close(); }
+  m.addEventListener("click", e => { if (e.target === m) close(); });
+  document.addEventListener("keydown", onKey);
+  document.body.appendChild(m);
+  m.close = close;
+  return m;
+}
+let toastTimer = null;
+function toast(msg) {
+  let t = document.querySelector(".toast");
+  if (!t) { t = document.createElement("div"); t.className = "toast"; document.body.appendChild(t); }
+  t.textContent = msg;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.remove(), 2800);
+}
+function openLogin() {
+  const m = modal(`<h2>Entrar</h2>
+    <p class="hint">Usa o email e a palavra-passe do utilizador que criaste no Supabase. Fica a sessão guardada neste dispositivo.</p>
+    <form id="lf"><input type="email" id="le" autocomplete="username" placeholder="Email" required>
+    <input type="password" id="lp" autocomplete="current-password" placeholder="Palavra-passe" required>
+    <p class="bad" id="lerr"></p>
+    <div class="row"><button class="btn primary" type="submit">Entrar</button><button class="btn" type="button" id="lc">Agora não</button></div></form>`);
+  m.querySelector("#lc").onclick = m.close;
+  m.querySelector("#lf").addEventListener("submit", async e => {
+    e.preventDefault();
+    const err = m.querySelector("#lerr"); err.textContent = "";
+    try { await login(m.querySelector("#le").value.trim(), m.querySelector("#lp").value); m.close(); toast("Sessão iniciada"); }
+    catch (ex) { err.textContent = "Não foi possível entrar: " + (ex.message || ex); }
+  });
+}
+
+// ---------- Adicionar cartas ----------
+function addCard(n, q) {
+  have.set(n, have.get(n) + (q || 1));
+  save(); render();
+}
+
+function parseBulk(text) {
+  const found = {}, bad = [];
+  // cada item: número (4) ou código com letras (GU 1, SUN 2, MR-NOR), com quantidade opcional (x2)
+  const re = /(?:([A-Za-z]{2,4})[\s\-]*(\d{1,2}|[A-Za-z]{2,4})|(\d+))(?:\s*[x×]\s*(\d{1,2}))?/gi;
+  const rest = text.replace(re, (m, p, c, num, q) => {
+    const card = BYID[compact(num || (p + c))];
+    if (card) found[card.n] = (found[card.n] || 0) + (q ? parseInt(q, 10) : 1);
+    else bad.push(m.trim());
+    return " ";
+  });
+  rest.split(/[\s,;]+/).filter(Boolean).forEach(x => bad.push(x));
+  return { list: Object.keys(found).map(n => ({ card: BYID[compact(n)], q: found[n] })), bad };
+}
+
+function candRow(c, q, best) {
+  const owned = have.get(c.n);
+  return `<div class="cand${best ? " best" : ""}"><div><div class="t">#${esc(c.n)} · ${esc(titleOf(c))}${q > 1 ? ` ×${q}` : ""}</div>
+    <div class="s">${esc(cleanSub(c.sub))}${c.name && c.team ? " · " + esc(c.team) : ""}${owned ? ` · já tens ×${owned}` : ""}</div></div>
+    <button class="btn primary" data-add="${esc(c.n)}" data-q="${q || 1}">Adicionar</button></div>`;
+}
+
+function openBulk() {
+  const m = modal(`<h2>Adicionar por números</h2>
+    <p class="hint">Escreve os números das cartas separados por espaços ou vírgulas. Para várias iguais usa x: <b>4x2</b>. Cartas especiais com o código, por exemplo <b>GU 1</b>.</p>
+    <textarea id="bt" rows="4" placeholder="ex.: 4 4 7 22 108 GU 1, 250x3"></textarea>
+    <div id="bp"></div>
+    <div class="row"><button class="btn primary" id="bgo" disabled>Adicionar tudo</button><button class="btn" id="bx">Fechar</button></div>`);
+  let cur = { list: [], bad: [] };
+  const upd = () => {
+    cur = parseBulk(m.querySelector("#bt").value);
+    m.querySelector("#bp").innerHTML =
+      cur.list.map(({ card, q }) => candRow(card, q, false).replace(/<button[^>]*>.*?<\/button>/, "")).join("") +
+      (cur.bad.length ? `<p class="bad">Não reconhecidas: ${cur.bad.map(esc).join(", ")}</p>` : "");
+    m.querySelector("#bgo").disabled = !cur.list.length;
+  };
+  m.querySelector("#bt").addEventListener("input", upd);
+  m.querySelector("#bx").onclick = m.close;
+  m.querySelector("#bgo").onclick = () => {
+    const total = cur.list.reduce((a, x) => a + x.q, 0);
+    for (const { card, q } of cur.list) have.set(card.n, have.get(card.n) + q);
+    save(); render(); m.close(); toast(`✓ ${total} carta${total > 1 ? "s" : ""} adicionada${total > 1 ? "s" : ""}`);
+  };
+}
+
+// ---------- Scanner (OCR no próprio telemóvel) ----------
+const STOP = new Set(["team", "most", "successful", "only", "available", "via", "limited", "editions"]);
+const SCORING = CARDS.map(c => ({
+  c,
+  parts: (c.name || "").split(/[&\s]+/).map(norm).filter(p => p.length >= 4 && !/[®™]/.test(p)),
+  idre: isBase(c) ? null : new RegExp("(^|[^a-z0-9])" + c.n.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/[\s\-]+/g, "[\\s-]*") + "($|[^a-z0-9])"),
+  kw: norm(cleanSub(c.sub)).replace(/[®™]/g, "").split(/[^a-z]+/).filter(w => w.length >= 4 && !STOP.has(w)),
+  team: (norm(c.team || "").split(/[^a-z]+/)[0] || "")
+}));
+function candidates(text) {
+  const t = norm(text);
+  const nums = new Set((t.match(/\d{1,3}/g) || []).map(x => String(parseInt(x, 10))));
+  const out = [];
+  for (const s of SCORING) {
+    let sc = 0;
+    if (s.idre) { if (s.idre.test(t)) sc += 4; }
+    else if (nums.has(s.c.n)) sc += 2;
+    if (s.parts.some(p => t.includes(p))) sc += 3;
+    if (s.kw.length) { const hit = s.kw.filter(w => t.includes(w)).length; if (hit / s.kw.length >= 0.5) sc += 2; }
+    if (s.team.length >= 4 && t.includes(s.team)) sc += 1;
+    if (sc >= 3 || (sc >= 2 && !s.c.name && !s.kw.length)) out.push({ c: s.c, sc });
+  }
+  out.sort((a, b) => b.sc - a.sc || (isBase(b.c) - isBase(a.c)));
+  return out.slice(0, 5);
+}
+async function prep(file) {
+  const bmp = await createImageBitmap(file);
+  const sc = Math.min(1, 2400 / Math.max(bmp.width, bmp.height));
+  const cv = document.createElement("canvas");
+  cv.width = Math.round(bmp.width * sc); cv.height = Math.round(bmp.height * sc);
+  const x = cv.getContext("2d");
+  x.drawImage(bmp, 0, 0, cv.width, cv.height);
+  const im = x.getImageData(0, 0, cv.width, cv.height), d = im.data;
+  let lo = 255, hi = 0;
+  for (let i = 0; i < d.length; i += 4) { const g = (d[i] * .299 + d[i + 1] * .587 + d[i + 2] * .114) | 0; d[i] = d[i + 1] = d[i + 2] = g; if (g < lo) lo = g; if (g > hi) hi = g; }
+  const k = hi > lo ? 255 / (hi - lo) : 1;
+  for (let i = 0; i < d.length; i += 4) d[i] = d[i + 1] = d[i + 2] = (d[i] - lo) * k;
+  x.putImageData(im, 0, 0);
+  return cv;
+}
+async function ocrImage(file, onProg) {
+  if (!window.Tesseract) await loadScript(TESS_LIB);
+  let src = file;
+  try { src = (await prep(file)) || file; } catch (e) { src = file; }
+  const r = await window.Tesseract.recognize(src, "eng", { logger: m => onProg && onProg(m) });
+  return (r && r.data && r.data.text) || "";
+}
+function openScan() {
+  const m = modal(`<h2>Ler carta</h2>
+    <p class="hint">Fotografa a carta com boa luz e sem reflexos, de modo a ver o número e o nome. Depois confirmas qual é a carta certa.</p>
+    <div class="row"><label class="btn primary">📷 Fotografar<input type="file" id="sh1" accept="image/*" capture="environment" hidden></label>
+    <label class="btn">Galeria<input type="file" id="sh2" accept="image/*" hidden></label></div>
+    <p class="hint" id="sst"></p><div id="sres"></div>
+    <details id="sraw" hidden><summary>Texto lido (para diagnóstico)</summary><pre id="stxt" style="white-space:pre-wrap;font-size:12px"></pre></details>
+    <p class="hint" style="margin-top:14px">Ou escreve o número da carta:</p>
+    <form id="smf" class="row" style="margin-top:0"><input type="text" id="smi" placeholder="ex.: 4 ou GU 1" style="flex:1;width:auto"><button class="btn" type="submit">Procurar</button></form>
+    <div class="row"><button class="btn" id="sx">Fechar</button></div>`);
+  const st = s => m.querySelector("#sst").textContent = s;
+  const show = (list, emptyMsg) => {
+    m.querySelector("#sres").innerHTML = list.length
+      ? list.map((x, i) => candRow(x.c, 1, i === 0)).join("")
+      : `<p class="bad">${esc(emptyMsg)}</p>`;
+  };
+  const onFile = async e => {
+    const f = e.target.files[0]; e.target.value = "";
+    if (!f) return;
+    m.querySelector("#sres").innerHTML = "";
+    st("A ler a imagem… na primeira vez demora mais, porque descarrega o leitor.");
+    try {
+      const text = await ocrImage(f, p => { if (p && p.status) st(`${p.status} ${Math.round((p.progress || 0) * 100)}%`); });
+      m.querySelector("#stxt").textContent = text; m.querySelector("#sraw").hidden = false;
+      st("");
+      show(candidates(text), "Não reconheci nenhuma carta. Tenta outra foto, com mais luz e mais perto, ou escreve o número em baixo.");
+    } catch (err) { st("Não consegui ler a imagem (" + (err.message || err) + "). Podes escrever o número em baixo."); }
+  };
+  m.querySelector("#sh1").addEventListener("change", onFile);
+  m.querySelector("#sh2").addEventListener("change", onFile);
+  m.querySelector("#smf").addEventListener("submit", e => {
+    e.preventDefault();
+    const r = parseBulk(m.querySelector("#smi").value);
+    show(r.list.map(x => ({ c: x.card })), "Número não encontrado na checklist.");
+  });
+  m.querySelector("#sres").addEventListener("click", e => {
+    const b = e.target.closest("[data-add]"); if (!b) return;
+    const c = BYID[compact(b.dataset.add)];
+    addCard(c.n, 1);
+    toast(`✓ #${c.n} ${titleOf(c)} (×${have.get(c.n)})`);
+    m.querySelector("#sres").innerHTML = "";
+    m.querySelector("#smi").value = "";
+    st("Adicionada. Fotografa a seguinte.");
+  });
+  m.querySelector("#sx").onclick = m.close;
+}
+
+// ---------- Lista ----------
+const state = { f: "all", q: "", g: "all" };
+const closed = new Set();
+function visible(c) {
+  if (state.g === "base" && !isBase(c)) return false;
+  if (state.g === "extra" && isBase(c)) return false;
+  const h = have.has(c.n);
+  if (state.f === "have" && !h) return false;
+  if (state.f === "miss" && h) return false;
+  if (state.f === "dup" && have.get(c.n) < 2) return false;
+  if (state.q) {
+    const hay = norm([c.n, c.name, c.team, c.sub].join(" "));
+    return state.q.split(/\s+/).every(w => hay.includes(w));
+  }
+  return true;
+}
+function render() {
+  const groups = [], idx = {};
+  for (const c of CARDS) {
+    if (!(c.sub in idx)) { idx[c.sub] = groups.length; groups.push({ sub: c.sub, all: [], shown: [] }); }
+    const g = groups[idx[c.sub]];
+    g.all.push(c);
+    if (visible(c)) g.shown.push(c);
+  }
+  let html = "";
+  for (const g of groups) {
+    if (!g.shown.length) continue;
+    const got = g.all.filter(c => have.has(c.n)).length;
+    const info = EXTRA_INFO[g.sub];
+    const first = g.all[0].n, last = g.all[g.all.length - 1].n;
+    html += `<details data-s="${esc(g.sub)}"${closed.has(g.sub) ? "" : " open"}><summary>
+      <span class="st">${esc(cleanSub(g.sub))} <small>${esc(first)}–${esc(last)}</small></span>
+      ${info ? `<span class="tag">${esc(info)}</span>` : ""}
+      <span class="cnt${got === g.all.length ? " done" : ""}">${got}/${g.all.length}</span>
+      <button class="mini" data-act="all" data-s="${esc(g.sub)}">Marcar todas</button>
+      <button class="mini" data-act="none" data-s="${esc(g.sub)}">Limpar</button>
+    </summary><div class="grid">`;
+    for (const c of g.shown) {
+      const q = have.get(c.n);
+      html += `<div class="c${q ? " have" : ""}" data-n="${esc(c.n)}">
+        <span class="n">#${esc(c.n)}${q > 1 ? ` <b class="dupb">×${q}</b>` : ""}</span><span class="nm">${esc(titleOf(c))}</span>${c.name && c.team ? `<span class="tm">${esc(c.team)}</span>` : ""}
+        ${q ? `<span class="qs"><button class="qb" data-d="-1" title="Menos uma">−</button><b>${q}</b><button class="qb" data-d="1" title="Mais uma">+</button></span>` : ""}</div>`;
+    }
+    html += `</div></details>`;
+  }
+  $("main").innerHTML = html || `<div class="empty">Nenhuma carta encontrada.</div>`;
+  updateTotal();
+}
+function updateTotal() {
+  const n = CARDS.filter(c => have.has(c.n)).length;
+  const pct = n / CARDS.length * 100;
+  let spare = 0, all = 0;
+  for (const c of CARDS) { const q = have.get(c.n); all += q; if (q > 1) spare += q - 1; }
+  $("total").textContent = `${n} / ${CARDS.length} (${pct.toFixed(1)}%)` + (spare ? ` · ${spare} repetidas` : "");
+  $("total").title = `${all} cartas no total, contando repetidas`;
+  $("barfill").style.width = pct + "%";
+}
+
+$("main").addEventListener("click", e => {
+  const mini = e.target.closest(".mini");
+  if (mini) {
+    e.preventDefault();
+    const s = mini.dataset.s;
+    for (const c of CARDS) if (c.sub === s) { if (mini.dataset.act === "all") have.add(c.n); else have.delete(c.n); }
+    save(); render(); return;
+  }
+  const qb = e.target.closest(".qb");
+  if (qb) {
+    const n = qb.closest(".c").dataset.n;
+    have.set(n, have.get(n) + parseInt(qb.dataset.d, 10));
+    save(); render(); return;
+  }
+  const card = e.target.closest(".c");
+  if (card) {
+    const n = card.dataset.n;
+    if (have.has(n)) have.delete(n); else have.add(n);
+    save(); render();
+  }
+});
+$("main").addEventListener("toggle", e => {
+  const d = e.target; if (!d.dataset || !d.dataset.s) return;
+  if (d.open) closed.delete(d.dataset.s); else closed.add(d.dataset.s);
+}, true);
+
+$("q").addEventListener("input", e => { state.q = norm(e.target.value.trim()); render(); });
+$("grp").addEventListener("change", e => { state.g = e.target.value; render(); });
+$("flt").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  state.f = b.dataset.f;
+  document.querySelectorAll("#flt button").forEach(x => x.classList.toggle("on", x === b));
+  render();
+});
+$("scan").addEventListener("click", openScan);
+$("bulk").addEventListener("click", openBulk);
+
+$("exp").addEventListener("click", () => {
+  const blob = new Blob([JSON.stringify({ v: 2, qty: have.m }, null, 1)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "turbo-attax-f1-2026-colecao.json";
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+});
+$("imp").addEventListener("click", () => $("file").click());
+$("file").addEventListener("change", e => {
+  const f = e.target.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try {
+      const d = JSON.parse(r.result);
+      const imported = new Collection(Array.isArray(d) ? d : (d.qty || d.have));
+      for (const n of Object.keys(imported.m)) if (!BYID[compact(n)]) delete imported.m[n];
+      if (!confirm(`Importar ${imported.size} cartas diferentes? Isto substitui as marcações atuais.`)) return;
+      const touched = new Set([...Object.keys(have.m), ...Object.keys(imported.m)]);
+      attach(imported);
+      touched.forEach(markDirty);
+      save(); render();
+    } catch (err) { alert("Ficheiro inválido."); }
+  };
+  r.readAsText(f);
+  e.target.value = "";
+});
+
+render();
+setState("local");
+initSync();
+</script>
+</body>
+</html>
