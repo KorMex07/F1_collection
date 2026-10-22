@@ -657,11 +657,12 @@ function openOdds() {
     <p class="hint">Chance de sair <b>pelo menos uma</b> carta de cada tipo, conforme o número de packs de 12 cartas que abrires. Os números são os impressos no verso de um pack Turbo Attax F1 2026.</p>
     <div class="row" style="margin-top:0">
       <label>Packs: <input type="number" id="opk" min="1" max="999" value="4" style="width:80px"></label>
-      <button class="btn" data-p="1">1</button><button class="btn" data-p="4">1 Mega Tin</button><button class="btn" data-p="8">Bundle</button><button class="btn" data-p="24">Caixa</button>
+      <button class="btn" data-p="1">1</button><button class="btn" data-p="4">Mega Tin</button><button class="btn" data-p="6">Super Tin</button><button class="btn" data-p="8">Bundle</button><button class="btn" data-p="24">Caixa</button>
     </div>
     <table><thead><tr><td></td><td><b>Cartas</b></td><td><b>Por pack</b></td><td><b>Chance</b></td></tr></thead><tbody id="obody">${oddsRows(4)}</tbody></table>
-    <p class="hint" style="margin-top:12px">Assumo que uma Mega Tin tem 48 cartas, ou seja 4 packs de 12, e que o Bundle são 2 latas (8 packs); isto não está confirmado. Cada pack é tratado como independente.</p>
-    <p class="hint"><b>Fora destas probabilidades:</b> cada Mega Tin traz 4 cartas exclusivas da própria lata (Guardians of the Grid ou Sunshine State) e o Super Tin traz 8 Greats of the Grid, segundo as descrições das lojas. Os Relics saem só em algumas latas e não encontrei probabilidade publicada. Os autógrafos são variantes 1 de 1 de algumas Limited Edition, ou seja, só em Hero Packs.</p>
+    <p class="hint" style="margin-top:12px">Packs por embalagem: uma Mega Tin tem 48 cartas (4 packs de 12), uma Super Tin tem 72 (6 packs) e o Bundle são 2 Mega Tins (8 packs). Os 4 e 6 packs vêm dos títulos de listagens de lojas, a Topps não o diz diretamente. Cada pack é tratado como independente.</p>
+    <p class="hint"><b>Fora destas probabilidades:</b> cada Mega Tin traz 4 cartas exclusivas da própria lata (Guardians of the Grid ou Sunshine State) e a Super Tin traz 8 Greats of the Grid. As latas têm ainda a hipótese de um Relic (Manufactured Relic nas Mega Tins; Manufactured ou Raceday Relic na Super Tin), sem probabilidade publicada.</p>
+    <p class="hint"><b>Autógrafos:</b> existem como variantes 1 de 1 de algumas cartas Limited Edition. Nenhuma das fontes que li diz que saem em latas, e o verso do pack indica que as Limited Edition vêm em Hero Packs, só disponíveis em caixas de expositor. Não consegui confirmar nem excluir de vez, mas não contes com isso nas latas.</p>
     <p class="hint">A Topps avisa que o conteúdo real e as probabilidades podem variar.</p>
     <div class="row"><button class="btn" id="ox">Fechar</button></div>`);
   const inp = m.querySelector("#opk");
@@ -740,6 +741,9 @@ $("main").addEventListener("click", e => {
     if (mini.dataset.act === "none") {
       const k = CARDS.filter(c => c.sub === s && have.has(c.n)).length;
       if (k && confirmOn) { askBox("Limpar série?", `Vais remover ${k} carta${k > 1 ? "s" : ""} de «${cleanSub(s)}».`, "Limpar", false, apply); return; }
+    } else {
+      const k = CARDS.filter(c => c.sub === s && !have.has(c.n)).length;
+      if (k && confirmOn) { askBox("Marcar todas?", `Vais adicionar ${k} carta${k > 1 ? "s" : ""} que ainda não tens de «${cleanSub(s)}». As que já tens ficam como estão.`, "Marcar todas", true, apply); return; }
     }
     apply(); return;
   }
