@@ -59,6 +59,8 @@
   .btn { font: inherit; padding: 8px 13px; border: 1px solid var(--line); border-radius: 9px; background: var(--panel); color: var(--text); cursor: pointer; display: inline-block; }
   .btn:hover { border-color: var(--accent); }
   .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  .btn.ok { background: var(--have); border-color: var(--have); color: #04140b; font-weight: 700; }
+  .chk { display: inline-flex; align-items: center; gap: 8px; margin-bottom: 8px; cursor: pointer; }
 
   /* ---------- séries ---------- */
   main { padding: 18px 16px; }
@@ -166,10 +168,11 @@
 </div></nav>
 <main class="wrap" id="main"></main>
 <footer>
-  <button class="btn" id="imgs">🖼 Imagens das séries</button>
+  <button class="btn" id="odds">🎲 Probabilidades</button>
   <button class="btn" id="exp">Exportar cópia</button>
   <button class="btn" id="imp">Importar cópia</button>
   <input type="file" id="file" accept=".json" hidden><br>
+  <label class="chk"><input type="checkbox" id="cfm"> Pedir confirmação ao adicionar ou remover cartas</label><br>
   Clica numa carta para marcar ou desmarcar. Com sessão iniciada, as cartas sincronizam entre os teus dispositivos; sem sessão ficam só neste browser.
   Usa "Exportar" para fazer cópia de segurança. Checklist fornecida pela Topps; o conteúdo real e as probabilidades podem variar.
 </footer>
@@ -561,6 +564,32 @@ function visible(c) {
   }
   return true;
 }
+// ---------- Confirmação ao adicionar / remover ----------
+const CONFIRM_KEY = "turbo-attax-f1-2026-confirm";
+let confirmOn = lsGet(CONFIRM_KEY) !== "0";
+$("cfm").checked = confirmOn;
+$("cfm").addEventListener("change", e => { confirmOn = e.target.checked; lsSet(CONFIRM_KEY, confirmOn ? "1" : "0"); });
+function askBox(title, detail, okLabel, isAdd, onOk) {
+  const m = modal(`<h2>${esc(title)}</h2><p style="margin:6px 0 4px">${detail}</p>
+    <div class="row"><button class="btn ${isAdd ? "ok" : "primary"}" id="ay">${esc(okLabel)}</button><button class="btn" id="an">Cancelar</button></div>`);
+  m.querySelector("#an").onclick = m.close;
+  m.querySelector("#ay").onclick = () => { m.close(); onOk(); };
+  m.querySelector("#ay").focus();
+}
+function changeQty(n, next) {
+  next = Math.max(0, Math.min(99, next));
+  const cur = have.get(n);
+  if (next === cur) return;
+  const apply = () => { have.set(n, next); save(); render(); };
+  if (!confirmOn) { apply(); return; }
+  const c = BYID[compact(n)];
+  const what = `<b>#${esc(c.n)} · ${esc(titleOf(c))}</b><br><span class="hint">${esc(cleanSub(c.sub))}</span>`;
+  if (cur === 0) askBox("Adicionar carta?", what, "Adicionar", true, apply);
+  else if (next > cur) askBox("Adicionar mais uma?", `${what}<br>×${cur} → ×${next}`, "Adicionar", true, apply);
+  else if (next === 0) askBox("Remover carta?", what, "Remover", false, apply);
+  else askBox("Remover uma cópia?", `${what}<br>×${cur} → ×${next}`, "Remover", false, apply);
+}
+
 // ---------- Imagens das séries (pasta img/ ao lado deste ficheiro) ----------
 const IMG_EXTS = ["jpg", "png", "webp"];
 const thumbCache = {};   // slug -> url | null (não existe) | "pending"
@@ -597,17 +626,49 @@ function openImg(src, title) {
   const m = modal(`<h2>${esc(title)}</h2><img src="${esc(src)}" alt="" style="width:100%;border-radius:10px;margin-top:8px"><div class="row"><button class="btn" id="ix">Fechar</button></div>`);
   m.querySelector("#ix").onclick = m.close;
 }
-function openImgHelp() {
-  const seen = {}, rows = [];
-  for (const c of CARDS) {
-    if (seen[c.sub]) continue; seen[c.sub] = 1;
-    const s = slugOf(c.sub), u = thumbCache[s];
-    rows.push(`<tr><td>${esc(cleanSub(c.sub))}</td><td><code>img/${s}.jpg</code></td><td>${u && u !== "pending" ? "✓" : ""}</td></tr>`);
-  }
-  const m = modal(`<h2>Imagens das séries</h2>
-    <p class="hint">Cria uma pasta <b>img</b> ao lado deste ficheiro (e no GitHub, se estiveres a usar o site publicado) e mete lá uma imagem por série, com estes nomes. Também aceita <b>.png</b> e <b>.webp</b>. A imagem aparece como miniatura no cabeçalho da série e abre maior ao clicar. Dá para pôr só as séries que quiseres.</p>
-    <table>${rows.join("")}</table><div class="row"><button class="btn" id="hx">Fechar</button></div>`);
-  m.querySelector("#hx").onclick = m.close;
+// ---------- Probabilidades (dados do verso de um pack Turbo Attax F1 2026) ----------
+const ODDS = [
+  { t: "Base", n: 128, per: "8 por pack" },
+  { t: "Foil e Holographic", n: 160, per: "4 por pack" },
+  { t: "100 Club", n: 9, one: 12 },
+  { t: "Black Edge Edition", n: 9, one: 16 },
+  { t: "Turbo Chrome", n: 25, one: 24, note: "inclui as paralelas numeradas: Green /99, Gold /50, Orange /25, Red /5 e Superfractor 1 de 1" },
+  { t: "Diamond Infinity", n: 9, one: 32 },
+  { t: "The Winning Formula", n: 1, one: 250 },
+  { t: "F1 Gold", n: 11, one: 384 },
+  { t: "Limited Edition", n: 16, hero: true, note: "2 por Hero Pack. Os Hero Packs (1 em 24 packs) só existem dentro de caixas de expositor, por isso não saem em latas" }
+];
+function fmtPct(x) {
+  const v = x * 100;
+  if (v > 99.9) return "> 99,9%";
+  return v.toLocaleString("pt-PT", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + "%";
+}
+function oddsRows(p) {
+  return ODDS.map(o => {
+    let cells;
+    if (o.per) cells = `<td>${o.per}</td><td>garantidas</td>`;
+    else if (o.one) cells = `<td>1 em ${o.one} packs</td><td><b>${fmtPct(1 - Math.pow(1 - 1 / o.one, p))}</b></td>`;
+    else cells = `<td>só Hero Packs</td><td>—</td>`;
+    return `<tr><td><b>${esc(o.t)}</b>${o.note ? `<br><span class="hint">${esc(o.note)}</span>` : ""}</td><td>${o.n}</td>${cells}</tr>`;
+  }).join("");
+}
+function openOdds() {
+  const m = modal(`<h2>Probabilidades</h2>
+    <p class="hint">Chance de sair <b>pelo menos uma</b> carta de cada tipo, conforme o número de packs de 12 cartas que abrires. Os números são os impressos no verso de um pack Turbo Attax F1 2026.</p>
+    <div class="row" style="margin-top:0">
+      <label>Packs: <input type="number" id="opk" min="1" max="999" value="4" style="width:80px"></label>
+      <button class="btn" data-p="1">1</button><button class="btn" data-p="4">1 Mega Tin</button><button class="btn" data-p="8">Bundle</button><button class="btn" data-p="24">Caixa</button>
+    </div>
+    <table><thead><tr><td></td><td><b>Cartas</b></td><td><b>Por pack</b></td><td><b>Chance</b></td></tr></thead><tbody id="obody">${oddsRows(4)}</tbody></table>
+    <p class="hint" style="margin-top:12px">Assumo que uma Mega Tin tem 48 cartas, ou seja 4 packs de 12, e que o Bundle são 2 latas (8 packs); isto não está confirmado. Cada pack é tratado como independente.</p>
+    <p class="hint"><b>Fora destas probabilidades:</b> cada Mega Tin traz 4 cartas exclusivas da própria lata (Guardians of the Grid ou Sunshine State) e o Super Tin traz 8 Greats of the Grid, segundo as descrições das lojas. Os Relics saem só em algumas latas e não encontrei probabilidade publicada. Os autógrafos são variantes 1 de 1 de algumas Limited Edition, ou seja, só em Hero Packs.</p>
+    <p class="hint">A Topps avisa que o conteúdo real e as probabilidades podem variar.</p>
+    <div class="row"><button class="btn" id="ox">Fechar</button></div>`);
+  const inp = m.querySelector("#opk");
+  const upd = () => { const p = Math.max(1, Math.min(999, parseInt(inp.value, 10) || 1)); m.querySelector("#obody").innerHTML = oddsRows(p); };
+  inp.addEventListener("input", upd);
+  m.querySelectorAll("[data-p]").forEach(b => b.addEventListener("click", () => { inp.value = b.dataset.p; upd(); }));
+  m.querySelector("#ox").onclick = m.close;
 }
 const GROUP_COLOR = sub =>
   /GUARDIANS|SUNSHINE|GREATS|LIMITED|BLACK GOLD/.test(sub) ? "#a66bff" :
@@ -672,20 +733,25 @@ $("main").addEventListener("click", e => {
   if (mini) {
     e.preventDefault();
     const s = mini.dataset.s;
-    for (const c of CARDS) if (c.sub === s) { if (mini.dataset.act === "all") have.add(c.n); else have.delete(c.n); }
-    save(); render(); return;
+    const apply = () => {
+      for (const c of CARDS) if (c.sub === s) { if (mini.dataset.act === "all") have.add(c.n); else have.delete(c.n); }
+      save(); render();
+    };
+    if (mini.dataset.act === "none") {
+      const k = CARDS.filter(c => c.sub === s && have.has(c.n)).length;
+      if (k && confirmOn) { askBox("Limpar série?", `Vais remover ${k} carta${k > 1 ? "s" : ""} de «${cleanSub(s)}».`, "Limpar", false, apply); return; }
+    }
+    apply(); return;
   }
   const qb = e.target.closest(".qb");
   if (qb) {
     const n = qb.closest(".c").dataset.n;
-    have.set(n, have.get(n) + parseInt(qb.dataset.d, 10));
-    save(); render(); return;
+    changeQty(n, have.get(n) + parseInt(qb.dataset.d, 10)); return;
   }
   const card = e.target.closest(".c");
   if (card) {
     const n = card.dataset.n;
-    if (have.has(n)) have.delete(n); else have.add(n);
-    save(); render();
+    changeQty(n, have.has(n) ? 0 : 1);
   }
 });
 $("main").addEventListener("toggle", e => {
@@ -703,7 +769,7 @@ $("flt").addEventListener("click", e => {
 });
 $("scan").addEventListener("click", openScan);
 $("bulk").addEventListener("click", openBulk);
-$("imgs").addEventListener("click", openImgHelp);
+$("odds").addEventListener("click", openOdds);
 
 $("exp").addEventListener("click", () => {
   const blob = new Blob([JSON.stringify({ v: 2, qty: have.m }, null, 1)], { type: "application/json" });
