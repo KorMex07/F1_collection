@@ -169,6 +169,8 @@
     .pk { padding: 5px 5px; }
     .pk .pn { font-size: 12px; } .pk .pt { font-size: 10.5px; } .pk .ps { font-size: 8px; }
   }
+
+  .bp.empty { background: rgba(255,255,255,.025); border-style: dashed; }
 </style>
 </head>
 <body>
@@ -749,24 +751,31 @@ function pocketHtml(c) {
   return `<div class="pk${q ? " have" : ""}" data-n="${esc(c.n)}" style="--ac:${GROUP_COLOR(c.sub)}" title="${esc(cleanSub(c.sub))}">
     <span class="pn">#${esc(c.n)}</span><span class="pt">${esc(titleOf(c))}</span><span class="ps">${esc(cleanSub(c.sub))}</span>${q > 1 ? `<b class="pq">×${q}</b>` : ""}</div>`;
 }
+// bpage = índice (0 = página 1) da página da esquerda; no computador pode ser -1: a página 1 fica sozinha à direita
+function normPage(p, per, P) {
+  p = Math.max(0, Math.min(p, P - 1));
+  if (per === 2) { const v = p + 1; return v - (v % 2) - 1; }
+  return p;
+}
 function renderBinder() {
   if (!BPAGES) buildBinder();
   const per = perView(), P = BPAGES.length;
-  bpage = Math.max(0, Math.min(bpage, P - 1));
-  if (per === 2) bpage -= bpage % 2;
-  const shown = BPAGES.slice(bpage, bpage + per);
-  const pagesHtml = shown.map((pg, i) => {
+  bpage = normPage(bpage, per, P);
+  const idxs = []; for (let k = 0; k < per; k++) idxs.push(bpage + k);
+  const pagesHtml = idxs.filter(i => i < P).map(i => {
+    if (i < 0) return `<div class="bp empty"></div>`;
+    const pg = BPAGES[i];
     const got = pg.cards.filter(c => have.has(c.n)).length;
     let cells = pg.cards.map(pocketHtml).join("");
     for (let k = pg.cards.length; k < 9; k++) cells += `<div class="pk blank"></div>`;
-    return `<div class="bp"><div class="bph"><span>Página ${bpage + i + 1} · ${esc(pg.title)}</span><b class="${got === pg.cards.length ? "done" : ""}">${got}/${pg.cards.length}</b></div><div class="bg">${cells}</div></div>`;
+    return `<div class="bp"><div class="bph"><span>Página ${i + 1} · ${esc(pg.title)}</span><b class="${got === pg.cards.length ? "done" : ""}">${got}/${pg.cards.length}</b></div><div class="bg">${cells}</div></div>`;
   }).join("");
-  const last = bpage + shown.length;
-  let cur = 0; BJUMPS.forEach((j, i) => { if (j.page <= bpage) cur = i; });
+  const firstReal = Math.max(bpage, 0), lastReal = Math.min(bpage + per - 1, P - 1);
+  let cur = 0; BJUMPS.forEach((j, i) => { if (j.page <= firstReal) cur = i; });
   $("binder").innerHTML = `<div class="bnav">
-      <button class="btn" data-b="prev"${bpage === 0 ? " disabled" : ""}>‹ Anterior</button>
-      <span class="info">Página${shown.length > 1 ? "s" : ""} ${bpage + 1}${shown.length > 1 ? "–" + last : ""} de ${P}</span>
-      <button class="btn" data-b="next"${last >= P ? " disabled" : ""}>Seguinte ›</button>
+      <button class="btn" data-b="prev"${firstReal === 0 ? " disabled" : ""}>‹ Anterior</button>
+      <span class="info">Página${lastReal > firstReal ? "s" : ""} ${firstReal + 1}${lastReal > firstReal ? "–" + (lastReal + 1) : ""} de ${P}</span>
+      <button class="btn" data-b="next"${lastReal >= P - 1 ? " disabled" : ""}>Seguinte ›</button>
       <select id="bj" title="Ir para…">${BJUMPS.map((j, i) => `<option value="${j.page}"${i === cur ? " selected" : ""}>${esc(j.label)}</option>`).join("")}</select>
     </div>
     <div class="binder${per === 1 ? " one" : ""}">${pagesHtml}</div>
@@ -777,7 +786,7 @@ function applyView() {
   document.querySelectorAll("#vw button").forEach(b => b.classList.toggle("on", b.dataset.v === view));
   if (view === "binder") renderBinder();
 }
-function goPage(p) { bpage = Math.max(0, p); lsSet(BPAGE_KEY, String(bpage)); renderBinder(); }
+function goPage(p) { bpage = p; renderBinder(); lsSet(BPAGE_KEY, String(bpage)); }
 $("vw").addEventListener("click", e => {
   const b = e.target.closest("button"); if (!b) return;
   view = b.dataset.v; lsSet(VIEW_KEY, view); applyView(); window.scrollTo(0, 0);
