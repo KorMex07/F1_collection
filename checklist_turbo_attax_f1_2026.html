@@ -171,6 +171,12 @@
   }
 
   .bp.empty { background: rgba(255,255,255,.025); border-style: dashed; }
+
+  .pk.have.new { --ac: #f5c518; background: linear-gradient(160deg, #ffe45c 0%, #f5c518 70%); color: #1a1500; border-color: #ffe45c; text-shadow: none; box-shadow: 0 0 0 2px rgba(245,197,24,.35), 0 0 14px rgba(245,197,24,.45); }
+  .pk.have.new .pt { color: #1a1500; }
+  .pk .pnew { position: absolute; bottom: 5px; right: 5px; background: #1a1500; color: #ffe45c; font-size: 9px; letter-spacing: .06em; padding: 1px 5px; border-radius: 99px; text-shadow: none; }
+  .legend { text-align: center; font-size: 13px; color: var(--muted); margin: 0 0 8px; }
+  .legend .sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; background: #f5c518; vertical-align: -1px; margin-right: 4px; }
 </style>
 </head>
 <body>
@@ -261,14 +267,14 @@ class Collection {
   }
   get(n) { return this.m[n] || 0; }
   has(n) { return this.get(n) > 0; }
-  _ch(n) { if (this.onchange) this.onchange(n); }
-  add(n) { if (!this.has(n)) { this.m[n] = 1; this._ch(n); } }
-  delete(n) { if (this.has(n)) { delete this.m[n]; this._ch(n); } }
+  _ch(n, old) { if (this.onchange) this.onchange(n, old); }
+  add(n) { if (!this.has(n)) { this.m[n] = 1; this._ch(n, 0); } }
+  delete(n) { if (this.has(n)) { const o = this.m[n]; delete this.m[n]; this._ch(n, o); } }
   set(n, v) {
     const old = this.get(n);
     v = Math.max(0, Math.min(v, 99));
     if (v > 0) this.m[n] = v; else delete this.m[n];
-    if (old !== v) this._ch(n);
+    if (old !== v) this._ch(n, old);
   }
   get size() { return Object.keys(this.m).length; }
 }
@@ -280,11 +286,23 @@ if (!lsSet(KEY, JSON.stringify(have.m))) {
 }
 function save() { lsSet(KEY, JSON.stringify(have.m)); }
 function saveDirty() { lsSet(DIRTY_KEY, JSON.stringify([...dirty])); }
+// datas de aquisição: n -> milissegundos de quando a carta passou de "não tenho" a "tenho"
+const STAMPS_KEY = "turbo-attax-f1-2026-stamps";
+let stamps = {}, suppressStamp = false; const stampSent = new Set();
+try { stamps = JSON.parse(lsGet(STAMPS_KEY) || "{}") || {}; } catch (e) { stamps = {}; }
+function saveStamps() { lsSet(STAMPS_KEY, JSON.stringify(stamps)); }
+function pruneStamps() { for (const n in stamps) if (!have.has(n)) delete stamps[n]; saveStamps(); }
+function stampChange(n, old) {
+  if (suppressStamp) return;
+  if (!have.has(n)) delete stamps[n];
+  else if (!old) stamps[n] = Date.now();   // só conta quando a carta é nova; mais uma cópia não muda a data
+  saveStamps();
+}
 function attach(c) { have = c; have.onchange = markDirty; }
 attach(have);
 
 // ---------- Sincronização (Supabase) ----------
-let sb = null, session = null, syncState = "local", flushing = false, flushTimer = null;
+let sb = null, session = null, syncState = "local", flushing = false, flushTimer = null, hasAddedAt = true;
 const CHIP_TXT = { local: "Só neste dispositivo", login: "Entrar para sincronizar", syncing: "A sincronizar…", ok: "✓ Sincronizado", error: "Falhou — tentar de novo" };
 function setState(s, msg) {
   syncState = s;
@@ -300,7 +318,7 @@ function loadScript(src) {
     document.head.appendChild(s);
   });
 }
-function markDirty(n) { dirty.add(n); saveDirty(); scheduleFlush(); }
+function markDirty(n, old) { stampChange(n, old); dirty.add(n); saveDirty(); scheduleFlush(); }
 function scheduleFlush() { clearTimeout(flushTimer); flushTimer = setTimeout(() => flush(false), 700); }
 
 async function flush(throwErr) {
@@ -308,12 +326,20 @@ async function flush(throwErr) {
   flushing = true;
   setState("syncing");
   const pushed = {};
-  const up = [], del = [];
+  const up = [], upS = [], del = [];
   for (const n of dirty) {
     const q = have.get(n); pushed[n] = q;
-    if (q > 0) up.push({ user_id: session.user.id, card_id: n, qty: q }); else del.push(n);
+    if (q > 0) {
+      const row = { user_id: session.user.id, card_id: n, qty: q };
+      if (hasAddedAt && stamps[n]) { row.added_at = new Date(stamps[n]).toISOString(); upS.push(row); } else up.push(row);
+    } else del.push(n);
   }
   try {
+    if (upS.length) {
+      const r1 = await sb.from("collection").upsert(upS, { onConflict: "user_id,card_id" });
+      if (r1.error && /added_at/i.test(r1.error.message || "")) { hasAddedAt = false; upS.forEach(r => { delete r.added_at; up.push(r); }); }   // coluna ainda não existe: segue sem datas na nuvem
+      else if (r1.error) throw r1.error;
+    }
     if (up.length) { const { error } = await sb.from("collection").upsert(up, { onConflict: "user_id,card_id" }); if (error) throw error; }
     if (del.length) { const { error } = await sb.from("collection").delete().in("card_id", del); if (error) throw error; }
     for (const n in pushed) if (have.get(n) === pushed[n]) dirty.delete(n);   // se mudou entretanto, fica para a próxima
@@ -332,11 +358,21 @@ async function syncNow() {
   try {
     if (!lsGet(SYNCED_KEY)) { Object.keys(have.m).forEach(n => dirty.add(n)); saveDirty(); }   // 1.ª vez: envia o que já tens
     await flush(true);
-    const { data, error } = await sb.from("collection").select("card_id,qty").range(0, 999);
+    let res = await sb.from("collection").select(hasAddedAt ? "card_id,qty,added_at" : "card_id,qty").range(0, 999);
+    if (res.error && hasAddedAt && /added_at/i.test(res.error.message || "")) { hasAddedAt = false; res = await sb.from("collection").select("card_id,qty").range(0, 999); }
+    const { data, error } = res;
     if (error) throw error;
-    const remote = {};
-    for (const r of data) if (BYID[compact(r.card_id)] && r.qty > 0) remote[r.card_id] = r.qty;
+    const remote = {}, rst = {};
+    for (const r of data) if (BYID[compact(r.card_id)] && r.qty > 0) { remote[r.card_id] = r.qty; if (r.added_at) rst[r.card_id] = Date.parse(r.added_at) || 0; }
     for (const n of dirty) { const q = have.get(n); if (q > 0) remote[n] = q; else delete remote[n]; }   // edições feitas durante a sincronização
+    // datas: a da nuvem manda; as locais que a nuvem ainda não tem sobem na próxima sincronização
+    const merged = {};
+    for (const n in remote) {
+      const ts = dirty.has(n) ? (stamps[n] || rst[n]) : (rst[n] || stamps[n]);
+      if (ts) merged[n] = ts;
+      if (hasAddedAt && stamps[n] && !rst[n] && !dirty.has(n) && !stampSent.has(n)) { dirty.add(n); stampSent.add(n); }   // sobe a data uma só vez por sessão
+    }
+    stamps = merged; saveStamps(); saveDirty();
     have.m = remote;
     save(); lsSet(SYNCED_KEY, "1");
     render();
@@ -746,10 +782,29 @@ function buildBinder() {
   BPAGES = pages; BJUMPS = jumps;
 }
 const perView = () => (mq.matches ? 2 : 1);
+const DAY = 24 * 3600 * 1000;
+const isNew = n => have.has(n) && stamps[n] && Date.now() - stamps[n] < DAY;
+function ago(ts) {
+  const m = Math.max(0, Math.round((Date.now() - ts) / 60000));
+  if (m < 1) return "agora mesmo"; if (m < 60) return `há ${m} min`;
+  const h = Math.floor(m / 60); if (h < 24) return `há ${h} h`;
+  const d = Math.floor(h / 24); return `há ${d} dia${d > 1 ? "s" : ""}`;
+}
+function whenStr(ts) { const d = new Date(ts), p = x => String(x).padStart(2, "0"); return `${p(d.getDate())}/${p(d.getMonth() + 1)} ${p(d.getHours())}:${p(d.getMinutes())}`; }
+function openHistory() {
+  const items = Object.keys(stamps).filter(n => have.has(n) && BYID[compact(n)]).sort((a, b) => stamps[b] - stamps[a]);
+  const rows = items.slice(0, 200).map(n => { const c = BYID[compact(n)], nw = isNew(n);
+    return `<tr><td>${whenStr(stamps[n])}<br><span class="hint">${ago(stamps[n])}</span></td><td><b>#${esc(c.n)}</b> ${esc(titleOf(c))}<br><span class="hint">${esc(cleanSub(c.sub))}</span></td><td>${nw ? "🟡" : ""}</td></tr>`; }).join("");
+  const m = modal(`<h2>Histórico de cartas novas</h2>
+    <p class="hint">Cartas pela data em que as adicionaste (🟡 = últimas 24 h, aparecem a amarelo na caderneta). Só conta a primeira vez que a carta entra; repetidas não mudam a data.${hasAddedAt ? "" : " <b>Aviso:</b> a coluna added_at ainda não existe no Supabase, por isso as datas só ficam neste aparelho."}</p>
+    ${rows ? `<table><tbody>${rows}</tbody></table>` : `<p>Ainda não há cartas com data registada. As que já tinhas antes desta versão não têm data.</p>`}
+    <div class="row"><button class="btn" id="hx">Fechar</button></div>`);
+  m.querySelector("#hx").onclick = m.close;
+}
 function pocketHtml(c) {
   const q = have.get(c.n);
-  return `<div class="pk${q ? " have" : ""}" data-n="${esc(c.n)}" style="--ac:${GROUP_COLOR(c.sub)}" title="${esc(cleanSub(c.sub))}">
-    <span class="pn">#${esc(c.n)}</span><span class="pt">${esc(titleOf(c))}</span><span class="ps">${esc(cleanSub(c.sub))}</span>${q > 1 ? `<b class="pq">×${q}</b>` : ""}</div>`;
+  return `<div class="pk${q ? " have" : ""}${isNew(c.n) ? " new" : ""}" data-n="${esc(c.n)}" style="--ac:${GROUP_COLOR(c.sub)}" title="${esc(cleanSub(c.sub))}">
+    <span class="pn">#${esc(c.n)}</span><span class="pt">${esc(titleOf(c))}</span><span class="ps">${esc(cleanSub(c.sub))}</span>${q > 1 ? `<b class="pq">×${q}</b>` : ""}${isNew(c.n) ? `<b class="pnew">NOVA</b>` : ""}</div>`;
 }
 // bpage = índice (0 = página 1) da página da esquerda; no computador pode ser -1: a página 1 fica sozinha à direita
 function normPage(p, per, P) {
@@ -776,10 +831,13 @@ function renderBinder() {
       <button class="btn" data-b="prev"${firstReal === 0 ? " disabled" : ""}>‹ Anterior</button>
       <span class="info">Página${lastReal > firstReal ? "s" : ""} ${firstReal + 1}${lastReal > firstReal ? "–" + (lastReal + 1) : ""} de ${P}</span>
       <button class="btn" data-b="next"${lastReal >= P - 1 ? " disabled" : ""}>Seguinte ›</button>
+      <button class="btn" id="hist">🕘 Histórico</button>
       <select id="bj" title="Ir para…">${BJUMPS.map((j, i) => `<option value="${j.page}"${i === cur ? " selected" : ""}>${esc(j.label)}</option>`).join("")}</select>
     </div>
     <div class="binder${per === 1 ? " one" : ""}">${pagesHtml}</div>
     <p class="hint" style="text-align:center;margin-top:12px">Cartas pela ordem da checklist; cada série especial começa numa página nova. Toca num bolso para marcar ou desmarcar a carta.</p>`;
+  const nn = Object.keys(stamps).filter(isNew).length;
+  $("binder").insertAdjacentHTML("afterbegin", `<p class="legend"><span class="sw"></span> Amarelo = adicionada nas últimas 24 h${nn ? ` · <b>${nn}</b> por pôr na caderneta` : ""}</p>`);
 }
 function applyView() {
   document.body.classList.toggle("bv", view === "binder");
@@ -792,6 +850,7 @@ $("vw").addEventListener("click", e => {
   view = b.dataset.v; lsSet(VIEW_KEY, view); applyView(); window.scrollTo(0, 0);
 });
 $("binder").addEventListener("click", e => {
+  if (e.target.closest("#hist")) { openHistory(); return; }
   const pk = e.target.closest(".pk[data-n]");
   if (pk) { const n = pk.dataset.n; changeQty(n, have.has(n) ? 0 : 1); return; }
   const nb = e.target.closest("[data-b]");
@@ -865,6 +924,10 @@ function updateTotal() {
   $("sHave").textContent = n; $("sMiss").textContent = CARDS.length - n; $("sDup").textContent = spare;
 }
 
+
+// as amarelas passam a normais sozinhas ao fim de 24 h
+setInterval(() => { if (view === "binder" && !document.hidden) renderBinder(); }, 60000);
+document.addEventListener("visibilitychange", () => { if (!document.hidden && view === "binder") renderBinder(); });
 $("main").addEventListener("click", e => {
   const th = e.target.closest("img.thumb");
   if (th) { e.preventDefault(); openImg(th.src, th.alt || ""); return; }
@@ -933,8 +996,8 @@ $("file").addEventListener("change", e => {
       if (!confirm(`Importar ${imported.size} cartas diferentes? Isto substitui as marcações atuais.`)) return;
       const touched = new Set([...Object.keys(have.m), ...Object.keys(imported.m)]);
       attach(imported);
-      touched.forEach(markDirty);
-      save(); render();
+      suppressStamp = true; touched.forEach(n => markDirty(n)); suppressStamp = false;
+      pruneStamps(); save(); render();
     } catch (err) { alert("Ficheiro inválido."); }
   };
   r.readAsText(f);
