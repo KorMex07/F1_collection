@@ -172,11 +172,23 @@
 
   .bp.empty { background: rgba(255,255,255,.025); border-style: dashed; }
 
-  .pk.have.new { --ac: #f5c518; background: linear-gradient(160deg, #ffe45c 0%, #f5c518 70%); color: #1a1500; border-color: #ffe45c; text-shadow: none; box-shadow: 0 0 0 2px rgba(245,197,24,.35), 0 0 14px rgba(245,197,24,.45); }
-  .pk.have.new .pt { color: #1a1500; }
-  .pk .pnew { position: absolute; bottom: 5px; right: 5px; background: #1a1500; color: #ffe45c; font-size: 9px; letter-spacing: .06em; padding: 1px 5px; border-radius: 99px; text-shadow: none; }
+  .pk.have.new { --ac: #00d4ff; background: linear-gradient(160deg, #7ff0ff 0%, #00c8f5 70%); color: #00141a; border-color: #7ff0ff; text-shadow: none; box-shadow: 0 0 0 2px rgba(0,212,255,.35), 0 0 14px rgba(0,212,255,.5); }
+  .pk.have.new .pt { color: #00141a; }
+  .pk .pnew { position: absolute; bottom: 5px; right: 5px; background: #00141a; color: #7ff0ff; font-size: 9px; letter-spacing: .06em; padding: 1px 5px; border-radius: 99px; text-shadow: none; }
   .legend { text-align: center; font-size: 13px; color: var(--muted); margin: 0 0 8px; }
-  .legend .sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; background: #f5c518; vertical-align: -1px; margin-right: 4px; }
+  .legend .sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; background: #00d4ff; vertical-align: -1px; margin-right: 4px; }
+
+  .box h3 { font-size: 14px; margin: 16px 0 6px; } .box h3 small { color: var(--muted); font-weight: 400; }
+  .tg { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 10px 0 4px; border-left: 3px solid var(--ac); padding-left: 6px; }
+  .tchip { display: inline-block; border: 1px solid var(--ac); border-radius: 8px; padding: 3px 8px; margin: 0 4px 4px 0; font-size: 13px; }
+  .tchip i { font-style: normal; font-weight: 700; color: var(--ac); }
+  .fgrid { display: flex; flex-wrap: wrap; gap: 4px; padding: 8px 0; }
+  .fc { font-size: 12px; padding: 2px 6px; border-radius: 6px; border: 1px dashed var(--line); color: var(--muted); font-variant-numeric: tabular-nums; }
+  .fc.h { border-style: solid; border-color: var(--ac); color: var(--text); }
+  .fc.lack { background: rgba(53,208,127,.2); border-color: #35d07f; }
+  .fc i { font-style: normal; font-weight: 700; margin-left: 3px; }
+  .box details { margin: 4px 0; border-left: 3px solid var(--ac); padding-left: 8px; } .box summary { cursor: pointer; padding: 4px 0; }
+  .box input[type=email] { font: inherit; padding: 8px 10px; border-radius: 9px; border: 1px solid var(--line); background: var(--panel); color: var(--text); }
 </style>
 </head>
 <body>
@@ -213,6 +225,7 @@
   </select>
   <button class="btn primary" id="scan">📷 Ler carta</button>
   <button class="btn" id="bulk">＋ Por números</button>
+  <button class="btn" id="frd">👥 Amigos</button>
 </div></nav>
 <main class="wrap" id="main"></main>
 <section class="wrap" id="binder"></section>
@@ -378,6 +391,7 @@ async function syncNow() {
     render();
     setState(dirty.size ? "syncing" : "ok");
     if (dirty.size) scheduleFlush();
+    if (typeof refreshFriendBadge === "function") refreshFriendBadge();
   } catch (e) { setState("error", e.message || String(e)); }
 }
 
@@ -794,9 +808,9 @@ function whenStr(ts) { const d = new Date(ts), p = x => String(x).padStart(2, "0
 function openHistory() {
   const items = Object.keys(stamps).filter(n => have.has(n) && BYID[compact(n)]).sort((a, b) => stamps[b] - stamps[a]);
   const rows = items.slice(0, 200).map(n => { const c = BYID[compact(n)], nw = isNew(n);
-    return `<tr><td>${whenStr(stamps[n])}<br><span class="hint">${ago(stamps[n])}</span></td><td><b>#${esc(c.n)}</b> ${esc(titleOf(c))}<br><span class="hint">${esc(cleanSub(c.sub))}</span></td><td>${nw ? "🟡" : ""}</td></tr>`; }).join("");
+    return `<tr><td>${whenStr(stamps[n])}<br><span class="hint">${ago(stamps[n])}</span></td><td><b>#${esc(c.n)}</b> ${esc(titleOf(c))}<br><span class="hint">${esc(cleanSub(c.sub))}</span></td><td>${nw ? "🔵" : ""}</td></tr>`; }).join("");
   const m = modal(`<h2>Histórico de cartas novas</h2>
-    <p class="hint">Cartas pela data em que as adicionaste (🟡 = últimas 24 h, aparecem a amarelo na caderneta). Só conta a primeira vez que a carta entra; repetidas não mudam a data.${hasAddedAt ? "" : " <b>Aviso:</b> a coluna added_at ainda não existe no Supabase, por isso as datas só ficam neste aparelho."}</p>
+    <p class="hint">Cartas pela data em que as adicionaste (🔵 = últimas 24 h, aparecem a azul-ciano na caderneta). Só conta a primeira vez que a carta entra; repetidas não mudam a data.${hasAddedAt ? "" : " <b>Aviso:</b> a coluna added_at ainda não existe no Supabase, por isso as datas só ficam neste aparelho."}</p>
     ${rows ? `<table><tbody>${rows}</tbody></table>` : `<p>Ainda não há cartas com data registada. As que já tinhas antes desta versão não têm data.</p>`}
     <div class="row"><button class="btn" id="hx">Fechar</button></div>`);
   m.querySelector("#hx").onclick = m.close;
@@ -837,7 +851,7 @@ function renderBinder() {
     <div class="binder${per === 1 ? " one" : ""}">${pagesHtml}</div>
     <p class="hint" style="text-align:center;margin-top:12px">Cartas pela ordem da checklist; cada série especial começa numa página nova. Toca num bolso para marcar ou desmarcar a carta.</p>`;
   const nn = Object.keys(stamps).filter(isNew).length;
-  $("binder").insertAdjacentHTML("afterbegin", `<p class="legend"><span class="sw"></span> Amarelo = adicionada nas últimas 24 h${nn ? ` · <b>${nn}</b> por pôr na caderneta` : ""}</p>`);
+  $("binder").insertAdjacentHTML("afterbegin", `<p class="legend"><span class="sw"></span> Azul-ciano = adicionada nas últimas 24 h${nn ? ` · <b>${nn}</b> por pôr na caderneta` : ""}</p>`);
 }
 function applyView() {
   document.body.classList.toggle("bv", view === "binder");
@@ -928,6 +942,95 @@ function updateTotal() {
 // as amarelas passam a normais sozinhas ao fim de 24 h
 setInterval(() => { if (view === "binder" && !document.hidden) renderBinder(); }, 60000);
 document.addEventListener("visibilitychange", () => { if (!document.hidden && view === "binder") renderBinder(); });
+// ---------- Amigos (ver a coleção do outro, só leitura, e trocas) ----------
+const FR_ERR = e => /function|schema cache|does not exist|relation/i.test((e && e.message) || "") ? "Falta correr o SQL de amigos no Supabase (ficheiro amigos.sql)." : ((e && e.message) || String(e));
+async function frList() { const { data, error } = await sb.rpc("my_friends"); if (error) throw error; return data || []; }
+async function refreshFriendBadge() {
+  const b = $("frd"); if (!b) return;
+  let n = 0;
+  try { if (sb && session) n = (await frList()).filter(f => f.status === "pending" && f.incoming).length; } catch (e) {}
+  b.textContent = n ? `👥 Amigos (${n})` : "👥 Amigos";
+}
+function groupedChips(list) {   // list: [{c, k}] por ordem da checklist, agrupado por série
+  let out = "", cur = null;
+  for (const it of list) {
+    if (it.c.sub !== cur) { cur = it.c.sub; out += `<div class="tg" style="--ac:${GROUP_COLOR(cur)}">${esc(cleanSub(cur))}</div>`; }
+    out += `<span class="tchip" style="--ac:${GROUP_COLOR(it.c.sub)}"><b>#${esc(it.c.n)}</b> ${esc(titleOf(it.c))}${it.k > 1 ? ` <i>×${it.k}</i>` : ""}</span>`;
+  }
+  return out;
+}
+async function openFriendView(f) {
+  const m = modal(`<h2>${esc(f.email)}</h2><p class="hint">A carregar…</p>`);
+  let rows;
+  try { const { data, error } = await sb.rpc("friend_collection", { p_friend: f.other_id }); if (error) throw error; rows = data || []; }
+  catch (e) { m.querySelector(".box").innerHTML = `<h2>${esc(f.email)}</h2><p class="hint">${esc(FR_ERR(e))}</p><div class="row"><button class="btn" id="fx">Fechar</button></div>`; m.querySelector("#fx").onclick = m.close; return; }
+  const th = {};   // coleção dele, por id canónico
+  for (const r of rows) { const c = BYID[compact(r.card_id)]; if (c && r.qty > 0) th[c.n] = r.qty; }
+  const total = Object.keys(th).length, dups = Object.values(th).filter(q => q > 1).length;
+  const get = CARDS.filter(c => (th[c.n] || 0) > 1 && !have.has(c.n)).map(c => ({ c, k: th[c.n] - 1 }));   // ele tem a mais e eu não tenho
+  const give = CARDS.filter(c => have.get(c.n) > 1 && !th[c.n]).map(c => ({ c, k: have.get(c.n) - 1 }));  // eu tenho a mais e ele não tem
+  const spare = CARDS.filter(c => (th[c.n] || 0) > 1).length;
+  const tabHtml = {
+    trade: `<h3>Ele tem repetidas que me faltam <small>(${get.length})</small></h3>${get.length ? groupedChips(get) : `<p class="hint">Nenhuma — ou ele não tem repetidas, ou já tens todas.</p>`}
+      <h3>Eu tenho repetidas que lhe faltam <small>(${give.length})</small></h3>${give.length ? groupedChips(give) : `<p class="hint">Nenhuma.</p>`}
+      <p class="hint">O número a seguir a × é quantas cópias a mais há (a repetida, não contando a que fica na coleção).</p>`,
+    coll: (() => {
+      const seen = {}, order = []; for (const c of CARDS) { if (!seen[c.sub]) { seen[c.sub] = []; order.push(c.sub); } seen[c.sub].push(c); }
+      return order.map(s => { const cs = seen[s], got = cs.filter(c => th[c.n]).length;
+        return `<details style="--ac:${GROUP_COLOR(s)}"><summary><b>${esc(cleanSub(s))}</b> <span class="hint">${got}/${cs.length}</span></summary><div class="fgrid">${cs.map(c => `<span class="fc${th[c.n] ? " h" : ""}${th[c.n] && !have.has(c.n) ? " lack" : ""}" title="${esc(titleOf(c))}">#${esc(c.n)}${th[c.n] > 1 ? `<i>×${th[c.n]}</i>` : ""}</span>`).join("")}</div></details>`; }).join("")
+        + `<p class="hint">Destacadas a verde as cartas que ele tem e tu ainda não. Só podes ver, não alterar.</p>`;
+    })()
+  };
+  m.querySelector(".box").innerHTML = `<h2>${esc(f.email)}</h2>
+    <p class="hint">${total} / ${CARDS.length} cartas diferentes · ${spare} repetidas. Vista só de leitura.</p>
+    <div class="seg" id="ftabs"><button data-t="trade" class="on">Trocas</button><button data-t="coll">Coleção dele</button></div>
+    <div id="fbody" style="margin-top:12px">${tabHtml.trade}</div>
+    <div class="row"><button class="btn" id="fx">Fechar</button></div>`;
+  m.querySelector("#fx").onclick = m.close;
+  m.querySelector("#ftabs").addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    m.querySelectorAll("#ftabs button").forEach(x => x.classList.toggle("on", x === b));
+    m.querySelector("#fbody").innerHTML = tabHtml[b.dataset.t];
+  });
+}
+async function openFriends() {
+  if (!sb || !session) { toast("Inicia sessão (botão no topo) para usar os amigos"); return; }
+  const m = modal(`<h2>Amigos</h2><p class="hint">A carregar…</p>`);
+  async function draw(msg) {
+    let list;
+    try { list = await frList(); } catch (e) { m.querySelector(".box").innerHTML = `<h2>Amigos</h2><p class="hint">${esc(FR_ERR(e))}</p><div class="row"><button class="btn" id="fx">Fechar</button></div>`; m.querySelector("#fx").onclick = m.close; return; }
+    const inc = list.filter(f => f.status === "pending" && f.incoming), out = list.filter(f => f.status === "pending" && !f.incoming), ok = list.filter(f => f.status === "accepted");
+    const row = (f, btns) => `<div class="cand"><div><div class="t">${esc(f.email)}</div></div><div class="row" style="margin:0">${btns}</div></div>`;
+    m.querySelector(".box").innerHTML = `<h2>Amigos</h2>
+      <p class="hint">Só depois de os dois aceitarem é que cada um passa a ver a coleção do outro. É sempre só leitura: ninguém altera as cartas do outro.</p>
+      ${msg ? `<p class="hint"><b>${esc(msg)}</b></p>` : ""}
+      ${inc.length ? `<h3>Pedidos recebidos</h3>${inc.map(f => row(f, `<button class="btn ok" data-a="acc" data-id="${f.id}">Aceitar</button><button class="btn" data-a="del" data-id="${f.id}">Recusar</button>`)).join("")}` : ""}
+      ${ok.length ? `<h3>Ligados</h3>${ok.map(f => row(f, `<button class="btn primary" data-a="view" data-id="${f.id}">Ver coleção</button><button class="btn" data-a="del" data-id="${f.id}" data-rm="1">Remover</button>`)).join("")}` : ""}
+      ${out.length ? `<h3>Pedidos enviados</h3>${out.map(f => row(f, `<span class="hint">à espera…</span><button class="btn" data-a="del" data-id="${f.id}">Cancelar</button>`)).join("")}` : ""}
+      <h3>Enviar pedido</h3>
+      <div class="row" style="margin-top:0"><input type="email" id="fem" placeholder="email do amigo" style="flex:1;min-width:180px"><button class="btn primary" id="fadd">Enviar pedido</button></div>
+      <div class="row"><button class="btn" id="fx">Fechar</button></div>`;
+    const box = m.querySelector(".box");
+    box.querySelector("#fx").onclick = m.close;
+    box.querySelector("#fadd").onclick = async () => {
+      const em = box.querySelector("#fem").value.trim(); if (!em) return;
+      const { data, error } = await sb.rpc("request_friend", { p_email: em });
+      if (error) { draw(FR_ERR(error)); return; }
+      draw({ sent: "Pedido enviado. Falta o outro aceitar.", accepted: "Ele já tinha pedido: ligação feita!", not_found: "Não existe nenhum utilizador com esse email.", self: "Esse é o teu próprio email.", already_friends: "Já estão ligados.", already_sent: "Já enviaste um pedido a este utilizador." }[data] || String(data));
+    };
+    box.querySelectorAll("[data-a]").forEach(b => b.onclick = async () => {
+      const id = Number(b.dataset.id), f = list.find(x => x.id === id), a = b.dataset.a;
+      if (a === "view") { m.close(); openFriendView(f); return; }
+      if (a === "del" && b.dataset.rm && !confirm(`Remover a ligação com ${f.email}? Deixam de ver a coleção um do outro.`)) return;
+      const r = a === "acc" ? await sb.rpc("accept_friend", { p_id: id }) : await sb.from("friendships").delete().eq("id", id);
+      if (r.error) { draw(FR_ERR(r.error)); return; }
+      refreshFriendBadge(); draw(a === "acc" ? "Ligação aceite." : "Feito.");
+    });
+  }
+  draw();
+}
+
+$("frd").addEventListener("click", openFriends);
 $("main").addEventListener("click", e => {
   const th = e.target.closest("img.thumb");
   if (th) { e.preventDefault(); openImg(th.src, th.alt || ""); return; }
