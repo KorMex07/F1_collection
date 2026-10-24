@@ -189,6 +189,47 @@
   .fc i { font-style: normal; font-weight: 700; margin-left: 3px; }
   .box details { margin: 4px 0; border-left: 3px solid var(--ac); padding-left: 8px; } .box summary { cursor: pointer; padding: 4px 0; }
   .box input[type=email] { font: inherit; padding: 8px 10px; border-radius: 9px; border: 1px solid var(--line); background: var(--panel); color: var(--text); }
+
+  /* ---------- barra de ferramentas ---------- */
+  .tools { padding: 10px 16px; backdrop-filter: blur(8px); }
+  .controls { position: relative; gap: 10px; }
+  .controls .grow { flex: 1 1 0; min-width: 0; }
+  .controls .seg, .controls .btn.tb, .srch input { height: 42px; box-sizing: border-box; }
+  .controls .seg { border-radius: 12px; }
+  .controls .seg button { padding: 0 16px; font-weight: 600; font-size: 14px; }
+  .btn.tb { display: inline-flex; align-items: center; gap: 7px; border-radius: 12px; padding: 0 14px; position: relative; font-size: 14px; }
+  .btn.primary.tb { padding: 0 18px; box-shadow: 0 4px 14px rgba(225,6,0,.35); }
+  .btn.tb .ic { font-size: 16px; line-height: 1; }
+  .btn.tb .bdg { position: absolute; top: -6px; right: -6px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 99px; background: var(--accent); color: #fff; font-size: 11px; display: grid; place-items: center; box-shadow: 0 0 0 2px var(--bg); }
+  .srch { position: relative; flex: 1 1 220px; min-width: 160px; max-width: 420px; display: block; }
+  .srch .si { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); font-size: 14px; opacity: .55; pointer-events: none; }
+  .srch input { width: 100%; padding-left: 38px; border-radius: 12px; }
+  #fcur { color: var(--accent); font-size: 12px; font-weight: 700; }
+  #fcur:empty { display: none; }
+  #fbtn.active { border-color: var(--accent); }
+  .pop { position: relative; }
+  .panel { position: absolute; top: calc(100% + 8px); left: 0; z-index: 30; width: 300px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px; box-shadow: 0 16px 40px rgba(0,0,0,.4); }
+  .panel[hidden] { display: none; }
+  .panel .plbl { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 0 0 6px; }
+  .panel .plbl + .seg, .panel select { width: 100%; }
+  .panel .seg { display: flex; } .panel .seg button { flex: 1; padding: 0 6px; }
+  .panel .seg + .plbl { margin-top: 14px; }
+  .panel select { height: 42px; border-radius: 12px; }
+  @media (max-width: 640px) {
+    .tools { position: relative; z-index: 20; }
+    .controls { display: grid; grid-template-columns: auto auto 1fr auto; gap: 8px; }
+    .controls .grow { display: none; }
+    .controls .seg { grid-column: 1 / -1; } .controls .seg button { flex: 1; }
+    .controls .srch { grid-column: 1 / 4; max-width: none; min-width: 0; }
+    .controls .pop { grid-column: 4; position: static; }
+    .controls #fbtn .lb, .controls #fcur { display: none; }
+    .controls #bulk { grid-column: 1; } .controls #frd { grid-column: 2; }
+    .controls #scan { grid-column: 3 / -1; justify-content: center; }
+    .controls #bulk .lb, .controls #frd .lb { display: none; }
+    .controls #bulk, .controls #frd { padding: 0 14px; }
+    body.bv .controls #bulk { grid-column: 1; }
+    .panel { left: 0; right: 0; width: auto; top: calc(100% + 6px); }
+  }
 </style>
 </head>
 <body>
@@ -211,21 +252,29 @@
 </header>
 <nav class="tools"><div class="wrap controls">
   <div class="seg" id="vw"><button data-v="list" class="on">Lista</button><button data-v="binder">Caderneta</button></div>
-  <input type="search" class="lst-only" id="q" placeholder="Pesquisar piloto, equipa, nº ou série…">
-  <div class="seg lst-only" id="flt">
-    <button data-f="all" class="on">Todas</button>
-    <button data-f="have">Tenho</button>
-    <button data-f="miss">Faltam</button>
-    <button data-f="dup">Repetidas</button>
+  <label class="srch lst-only"><span class="si">🔍</span><input type="search" id="q" placeholder="Pesquisar piloto, equipa, nº ou série…"></label>
+  <div class="pop lst-only">
+    <button class="btn tb" id="fbtn" aria-expanded="false"><span class="ic">⚙</span><span class="lb">Filtros</span><span id="fcur"></span></button>
+    <div class="panel" id="fpanel" hidden>
+      <div class="plbl">Mostrar</div>
+      <div class="seg" id="flt">
+        <button data-f="all" class="on">Todas</button>
+        <button data-f="have">Tenho</button>
+        <button data-f="miss">Faltam</button>
+        <button data-f="dup">Repetidas</button>
+      </div>
+      <div class="plbl">Série</div>
+      <select id="grp">
+        <option value="all">Todo o set</option>
+        <option value="base">Set base (1–353)</option>
+        <option value="extra">Exclusivas e extras</option>
+      </select>
+    </div>
   </div>
-  <select id="grp" class="lst-only">
-    <option value="all">Todo o set</option>
-    <option value="base">Set base (1–353)</option>
-    <option value="extra">Exclusivas e extras</option>
-  </select>
-  <button class="btn primary" id="scan">📷 Ler carta</button>
-  <button class="btn" id="bulk">＋ Por números</button>
-  <button class="btn" id="frd">👥 Amigos</button>
+  <span class="grow"></span>
+  <button class="btn tb" id="bulk" title="Adicionar por números"><span class="ic">＋</span><span class="lb">Por números</span></button>
+  <button class="btn tb" id="frd" title="Amigos"><span class="ic">👥</span><span class="lb">Amigos</span></button>
+  <button class="btn primary tb" id="scan"><span class="ic">📷</span><span class="lb">Ler carta</span></button>
 </div></nav>
 <main class="wrap" id="main"></main>
 <section class="wrap" id="binder"></section>
@@ -949,7 +998,7 @@ async function refreshFriendBadge() {
   const b = $("frd"); if (!b) return;
   let n = 0;
   try { if (sb && session) n = (await frList()).filter(f => f.status === "pending" && f.incoming).length; } catch (e) {}
-  b.textContent = n ? `👥 Amigos (${n})` : "👥 Amigos";
+  b.innerHTML = `<span class="ic">👥</span><span class="lb">Amigos</span>${n ? `<b class="bdg">${n}</b>` : ""}`;
 }
 function groupedChips(list) {   // list: [{c, k}] por ordem da checklist, agrupado por série
   let out = "", cur = null;
@@ -1078,6 +1127,22 @@ $("flt").addEventListener("click", e => {
 $("scan").addEventListener("click", openScan);
 $("bulk").addEventListener("click", openBulk);
 $("odds").addEventListener("click", openOdds);
+
+function updFilterBtn() {
+  const f = document.querySelector("#flt .on"), g = $("grp"), parts = [];
+  if (f && f.dataset.f !== "all") parts.push(f.textContent);
+  if (g.value !== "all") parts.push(g.options[g.selectedIndex].textContent.replace(/ \(.*\)/, ""));
+  $("fcur").textContent = parts.join(" · ");
+  $("fbtn").classList.toggle("active", parts.length > 0);
+}
+function setPanel(open) { $("fpanel").hidden = !open; $("fbtn").setAttribute("aria-expanded", open); }
+$("fbtn").addEventListener("click", e => { e.stopPropagation(); setPanel($("fpanel").hidden); });
+document.addEventListener("click", e => { if (!$("fpanel").hidden && !e.target.closest(".pop")) setPanel(false); });
+document.addEventListener("keydown", e => { if (e.key === "Escape") setPanel(false); });
+$("flt").addEventListener("click", () => setTimeout(updFilterBtn, 0));
+$("grp").addEventListener("change", updFilterBtn);
+updFilterBtn();
+
 
 $("exp").addEventListener("click", () => {
   const blob = new Blob([JSON.stringify({ v: 2, qty: have.m }, null, 1)], { type: "application/json" });
