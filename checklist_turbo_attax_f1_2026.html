@@ -240,6 +240,19 @@
   body.fv .mini, body.fv .qs, body.fv #scan, body.fv #bulk, body.fv #exp, body.fv #imp, body.fv #cfm, body.fv label.chk { display: none !important; }
   body.fv .c, body.fv .pk { cursor: default; }
   body.fv .hero { box-shadow: inset 0 -4px 0 #00d4ff; }
+
+  .fb-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
+  .fb-row .btn { padding: 6px 12px; font-size: 13px; border-radius: 99px; } .fb-row .btn.on { border-color: #00d4ff; background: rgba(0,212,255,.18); }
+  .fbanner .btn.on { border-color: #00d4ff; background: rgba(0,212,255,.18); }
+  .cmpt { position: absolute; right: 8px; bottom: 6px; font-size: 10px; font-weight: 700; letter-spacing: .03em; padding: 1px 7px; border-radius: 99px; background: var(--panel); border: 1px solid var(--line); color: var(--muted); }
+  .c { }
+  .c.cmp-both { border-left-color: #35d07f; } .c.cmp-both .cmpt { color: #35d07f; border-color: #35d07f; }
+  .c.cmp-his { border-left-color: #00d4ff; } .c.cmp-his .cmpt { color: #00a9cc; border-color: #00a9cc; }
+  .c.cmp-mine { border-left-color: #f5a623; background: rgba(245,166,35,.10); } .c.cmp-mine .cmpt { color: #d98a00; border-color: #d98a00; }
+  .c.cmp-none { opacity: .7; }
+  .c[class*="cmp-"] { padding-bottom: 28px; }
+  .pk.cmp-mine { border: 1px solid #f5a623; box-shadow: inset 0 0 0 2px rgba(245,166,35,.35); }
+  .pk.cmp-both { box-shadow: 0 0 0 2px rgba(53,208,127,.7); }
 </style>
 </head>
 <body>
@@ -263,10 +276,19 @@
 <div class="fbanner" id="fbanner" hidden><div class="wrap fb-in">
   <span class="fb-t">👁 A ver a coleção de <b id="fbn"></b> · só leitura</span>
   <span class="fb-act">
+    <button class="btn" data-fb="cmp" id="fbcmpb">⇄ Comparar</button>
     <button class="btn" data-fb="get" id="fbget"></button>
     <button class="btn" data-fb="give" id="fbgive"></button>
     <button class="btn primary" data-fb="back">← A minha coleção</button>
   </span>
+</div>
+<div class="wrap fb-row" id="fbrow" hidden>
+  <span class="hint" style="margin:0">Comparar com a minha coleção:</span>
+  <button class="btn on" data-cf="all">Todas</button>
+  <button class="btn" data-cf="both" id="cfboth"></button>
+  <button class="btn" data-cf="his" id="cfhis"></button>
+  <button class="btn" data-cf="mine" id="cfmine"></button>
+  <button class="btn" data-cf="none" id="cfnone"></button>
 </div></div>
 <nav class="tools"><div class="wrap controls">
   <div class="seg" id="vw"><button data-v="list" class="on">Lista</button><button data-v="binder">Caderneta</button></div>
@@ -720,6 +742,7 @@ function visible(c) {
   if (state.f === "have" && !h) return false;
   if (state.f === "miss" && h) return false;
   if (state.f === "dup" && have.get(c.n) < 2) return false;
+  if (viewing && /^c_/.test(state.f) && ("c_" + cmpState(c.n)) !== state.f) return false;   // comparação
   if (state.f === "get" && !(have.get(c.n) > 1 && !mine.has(c.n))) return false;     // vista de amigo: ele repete e eu não tenho
   if (state.f === "give" && !(mine.get(c.n) > 1 && !have.has(c.n))) return false;    // vista de amigo: eu repito e ele não tem
   if (state.q) {
@@ -886,9 +909,15 @@ function openHistory() {
     <div class="row"><button class="btn" id="hx">Fechar</button></div>`);
   m.querySelector("#hx").onclick = m.close;
 }
+function cmpState(n) { const a = have.has(n), m = mine && mine.has(n); return a && m ? "both" : a ? "his" : m ? "mine" : "none"; }
+function cmpTag(n, s) {
+  const mq = mine.get(n);
+  return `<span class="cmpt">${{ both: "Ambos", his: "Só ele", mine: "Só eu", none: "Nenhum" }[s]}${mq > 1 ? ` · eu ×${mq}` : ""}</span>`;
+}
 function pocketHtml(c) {
   const q = have.get(c.n);
-  return `<div class="pk${q ? " have" : ""}${isNew(c.n) ? " new" : ""}" data-n="${esc(c.n)}" style="--ac:${GROUP_COLOR(c.sub)}" title="${esc(cleanSub(c.sub))}">
+  const cs = viewing && state.cmp ? cmpState(c.n) : "";
+  return `<div class="pk${q ? " have" : ""}${isNew(c.n) ? " new" : ""}${cs ? " cmp-" + cs : ""}" data-n="${esc(c.n)}" style="--ac:${GROUP_COLOR(c.sub)}" title="${esc(cleanSub(c.sub))}">
     <span class="pn">#${esc(c.n)}</span><span class="pt">${esc(titleOf(c))}</span><span class="ps">${esc(cleanSub(c.sub))}</span>${q > 1 ? `<b class="pq">×${q}</b>` : ""}${isNew(c.n) ? `<b class="pnew">NOVA</b>` : ""}</div>`;
 }
 // bpage = índice (0 = página 1) da página da esquerda; no computador pode ser -1: a página 1 fica sozinha à direita
@@ -987,7 +1016,8 @@ function render() {
     </summary><div class="grid">`;
     for (const c of g.shown) {
       const q = have.get(c.n);
-      html += `<div class="c${q ? " have" : ""}" data-n="${esc(c.n)}">
+      const cs = viewing && state.cmp ? cmpState(c.n) : "";
+      html += `<div class="c${q ? " have" : ""}${cs ? " cmp-" + cs : ""}" data-n="${esc(c.n)}">${cs ? cmpTag(c.n, cs) : ""}
         <span class="n">#${esc(c.n)}${q > 1 ? ` <b class="dupb">×${q}</b>` : ""}</span><span class="nm">${esc(titleOf(c))}</span>${c.name && c.team ? `<span class="tm">${esc(c.team)}</span>` : ""}
         ${q ? `<span class="qs"><button class="qb" data-d="-1" title="Menos uma">−</button><b>${q}</b><button class="qb" data-d="1" title="Mais uma">+</button></span>` : ""}</div>`;
     }
@@ -1039,28 +1069,42 @@ async function enterFriend(f) {
   const nGet = CARDS.filter(c => have.get(c.n) > 1 && !mine.has(c.n)).length, nGive = CARDS.filter(c => mine.get(c.n) > 1 && !have.has(c.n)).length;
   $("fbget").textContent = `Repetidas dele que me faltam (${nGet})`;
   $("fbgive").textContent = `Minhas repetidas que lhe faltam (${nGive})`;
+  state.cmp = false; $("fbrow").hidden = true; $("fbcmpb").classList.remove("on");
+  const cnt = { both: 0, his: 0, mine: 0, none: 0 }; for (const c of CARDS) cnt[cmpState(c.n)]++;
+  $("cfboth").textContent = `Ambos têm (${cnt.both})`; $("cfhis").textContent = `Só ele (${cnt.his})`; $("cfmine").textContent = `Só eu (${cnt.mine})`; $("cfnone").textContent = `Nenhum tem (${cnt.none})`;
   $("fbanner").hidden = false; document.body.classList.add("fv");
   refreshFv(); window.scrollTo(0, 0);
 }
 function leaveFriend() {
   if (!viewing) return;
   have = mine; stamps = mineStamps; viewing = null; mine = null; mineStamps = null;
-  state.f = "all"; document.querySelectorAll("#flt button").forEach(x => x.classList.toggle("on", x.dataset.f === "all")); updFilterBtn();
+  state.f = "all"; state.cmp = false; $("fbrow").hidden = true; document.querySelectorAll("#flt button").forEach(x => x.classList.toggle("on", x.dataset.f === "all")); updFilterBtn();
   $("ttl").textContent = "A minha coleção"; $("fbanner").hidden = true; document.body.classList.remove("fv");
   refreshFv(); window.scrollTo(0, 0);
 }
 function refreshFv() {
   render(); if (view === "binder") renderBinder();
   document.querySelectorAll("#fbanner [data-fb=get],#fbanner [data-fb=give]").forEach(b => b.classList.toggle("on", state.f === b.dataset.fb));
+  $("fbcmpb").classList.toggle("on", !!state.cmp); $("fbrow").hidden = !state.cmp;
+  document.querySelectorAll("#fbrow [data-cf]").forEach(b => b.classList.toggle("on", state.f === (b.dataset.cf === "all" ? "all" : "c_" + b.dataset.cf)));
 }
 $("fbanner").addEventListener("click", e => {
   const b = e.target.closest("[data-fb]"); if (!b) return;
   if (b.dataset.fb === "back") { leaveFriend(); return; }
+  if (b.dataset.fb === "cmp") {
+    state.cmp = !state.cmp; if (!state.cmp && /^c_/.test(state.f)) state.f = "all";
+    document.querySelectorAll("#flt button").forEach(x => x.classList.toggle("on", x.dataset.f === state.f)); updFilterBtn(); refreshFv(); return;
+  }
   const same = state.f === b.dataset.fb;   // segundo clique volta a mostrar tudo
   state.f = same ? "all" : b.dataset.fb;
   if (!same) switchToList();
   document.querySelectorAll("#flt button").forEach(x => x.classList.toggle("on", x.dataset.f === state.f));
   updFilterBtn(); refreshFv();
+});
+$("fbrow").addEventListener("click", e => {
+  const b = e.target.closest("[data-cf]"); if (!b) return;
+  state.f = b.dataset.cf === "all" ? "all" : "c_" + b.dataset.cf;
+  document.querySelectorAll("#flt button").forEach(x => x.classList.toggle("on", x.dataset.f === state.f)); updFilterBtn(); refreshFv();
 });
 function switchToList() { if (view !== "list") { view = "list"; lsSet(VIEW_KEY, view); applyView(); } }
 // só leitura a sério: nada de alterar cartas enquanto se vê a coleção de outro
