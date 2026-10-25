@@ -253,6 +253,23 @@
   .c[class*="cmp-"] { padding-bottom: 28px; }
   .pk.cmp-mine { border: 1px solid #f5a623; box-shadow: inset 0 0 0 2px rgba(245,166,35,.35); }
   .pk.cmp-both { box-shadow: 0 0 0 2px rgba(53,208,127,.7); }
+
+  /* banner de amigo, versão compacta */
+  .fbanner { padding: 8px 16px; position: relative; z-index: 25; }
+  .fb-in { gap: 8px; } .fb-t { font-size: 14px; } .fb-t small { color: var(--muted); font-size: 13px; }
+  .fb-act .pop { position: relative; }
+  .fb-act .panel { left: auto; right: 0; width: 340px; max-width: calc(100vw - 32px); }
+  .fb-act .btn.tb { height: 38px; }
+  #fvcur { color: var(--accent); font-size: 12px; font-weight: 700; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #fvcur:empty { display: none; }
+  #fvb.active { border-color: #00d4ff; }
+  .panel .sw { display: flex; gap: 8px; align-items: center; font-size: 14px; margin-bottom: 12px; cursor: pointer; }
+  .panel .opt { display: flex; width: 100%; justify-content: space-between; align-items: center; font: inherit; font-size: 14px; padding: 9px 12px; margin-bottom: 4px; border: 1px solid var(--line); border-radius: 10px; background: transparent; color: var(--text); cursor: pointer; text-align: left; }
+  .panel .opt b { color: var(--muted); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .panel .opt.on { border-color: #00d4ff; background: rgba(0,212,255,.15); }
+  .panel .opt:hover { border-color: #00d4ff; }
+  .panel .opt + .plbl, .panel .plbl { margin-top: 12px; }
+  @media (max-width: 640px) { .fb-act .pop { position: static; } .fb-act .panel { position: absolute; left: 16px; right: 16px; top: 100%; width: auto; max-width: none; margin-top: 4px; } .fb-act .btn.primary .lb { display: none; } }
 </style>
 </head>
 <body>
@@ -274,21 +291,14 @@
   <div class="checker"></div>
 </header>
 <div class="fbanner" id="fbanner" hidden><div class="wrap fb-in">
-  <span class="fb-t">👁 A ver a coleção de <b id="fbn"></b> · só leitura</span>
+  <span class="fb-t">👁 <b id="fbn"></b> <small>· só leitura</small></span>
   <span class="fb-act">
-    <button class="btn" data-fb="cmp" id="fbcmpb">⇄ Comparar</button>
-    <button class="btn" data-fb="get" id="fbget"></button>
-    <button class="btn" data-fb="give" id="fbgive"></button>
-    <button class="btn primary" data-fb="back">← A minha coleção</button>
+    <span class="pop" id="fvwrap">
+      <button class="btn tb" id="fvb" aria-expanded="false"><span class="ic">⇄</span><span class="lb">Comparar e trocas</span><span id="fvcur"></span></button>
+      <div class="panel" id="fvpanel" hidden></div>
+    </span>
+    <button class="btn primary tb" data-fb="back"><span class="ic">←</span><span class="lb">A minha coleção</span></button>
   </span>
-</div>
-<div class="wrap fb-row" id="fbrow" hidden>
-  <span class="hint" style="margin:0">Comparar com a minha coleção:</span>
-  <button class="btn on" data-cf="all">Todas</button>
-  <button class="btn" data-cf="both" id="cfboth"></button>
-  <button class="btn" data-cf="his" id="cfhis"></button>
-  <button class="btn" data-cf="mine" id="cfmine"></button>
-  <button class="btn" data-cf="none" id="cfnone"></button>
 </div></div>
 <nav class="tools"><div class="wrap controls">
   <div class="seg" id="vw"><button data-v="list" class="on">Lista</button><button data-v="binder">Caderneta</button></div>
@@ -1052,6 +1062,13 @@ async function refreshFriendBadge() {
   try { if (sb && session) n = (await frList()).filter(f => f.status === "pending" && f.incoming).length; } catch (e) {}
   b.innerHTML = `<span class="ic">👥</span><span class="lb">Amigos</span>${n ? `<b class="bdg">${n}</b>` : ""}`;
 }
+const FV_OPTS = [["all", "Todas as cartas dele"], ["c_both", "Ambos têm"], ["c_his", "Só ele tem"], ["c_mine", "Só eu tenho"], ["c_none", "Nenhum tem"], ["get", "Repetidas dele que me faltam"], ["give", "Minhas repetidas que lhe faltam"]];
+function fvPanelHtml(cnt) {
+  const row = k => `<button class="opt" data-sel="${k}"><span>${FV_OPTS.find(o => o[0] === k)[1]}</span><b>${cnt[k] == null ? "" : cnt[k]}</b></button>`;
+  return `<label class="sw"><input type="checkbox" id="fcmpchk"> Mostrar etiquetas de comparação nas cartas</label>
+    <div class="plbl">Mostrar</div>${row("all")}${["c_both", "c_his", "c_mine", "c_none"].map(row).join("")}
+    <div class="plbl">Trocas</div>${row("get")}${row("give")}`;
+}
 async function enterFriend(f) {
   toast("A carregar a coleção…");
   let rows;
@@ -1062,50 +1079,52 @@ async function enterFriend(f) {
   for (const r of rows) { const c = BYID[compact(r.card_id)]; if (c && r.qty > 0) { m[c.n] = r.qty; if (r.added_at) st[c.n] = Date.parse(r.added_at) || 0; } }
   viewing = f;
   have = new Collection(m); have.onchange = null; stamps = st;
-  state.f = "all"; document.querySelectorAll("#flt button").forEach(x => x.classList.toggle("on", x.dataset.f === "all")); updFilterBtn();
-  const name = f.email.split("@")[0];
+  state.f = "all"; state.cmp = false;
+  document.querySelectorAll("#flt button").forEach(x => x.classList.toggle("on", x.dataset.f === "all")); updFilterBtn();
   $("fbn").textContent = f.email;
-  $("ttl").textContent = "Coleção de " + name;
-  const nGet = CARDS.filter(c => have.get(c.n) > 1 && !mine.has(c.n)).length, nGive = CARDS.filter(c => mine.get(c.n) > 1 && !have.has(c.n)).length;
-  $("fbget").textContent = `Repetidas dele que me faltam (${nGet})`;
-  $("fbgive").textContent = `Minhas repetidas que lhe faltam (${nGive})`;
-  state.cmp = false; $("fbrow").hidden = true; $("fbcmpb").classList.remove("on");
-  const cnt = { both: 0, his: 0, mine: 0, none: 0 }; for (const c of CARDS) cnt[cmpState(c.n)]++;
-  $("cfboth").textContent = `Ambos têm (${cnt.both})`; $("cfhis").textContent = `Só ele (${cnt.his})`; $("cfmine").textContent = `Só eu (${cnt.mine})`; $("cfnone").textContent = `Nenhum tem (${cnt.none})`;
+  $("ttl").textContent = "Coleção de " + f.email.split("@")[0];
+  const cnt = { all: null, c_both: 0, c_his: 0, c_mine: 0, c_none: 0, get: 0, give: 0 };
+  for (const c of CARDS) { cnt["c_" + cmpState(c.n)]++; if (have.get(c.n) > 1 && !mine.has(c.n)) cnt.get++; if (mine.get(c.n) > 1 && !have.has(c.n)) cnt.give++; }
+  $("fvpanel").innerHTML = fvPanelHtml(cnt);
+  setFvPanel(false);
   $("fbanner").hidden = false; document.body.classList.add("fv");
   refreshFv(); window.scrollTo(0, 0);
 }
 function leaveFriend() {
   if (!viewing) return;
   have = mine; stamps = mineStamps; viewing = null; mine = null; mineStamps = null;
-  state.f = "all"; state.cmp = false; $("fbrow").hidden = true; document.querySelectorAll("#flt button").forEach(x => x.classList.toggle("on", x.dataset.f === "all")); updFilterBtn();
+  state.f = "all"; state.cmp = false; setFvPanel(false);
+  document.querySelectorAll("#flt button").forEach(x => x.classList.toggle("on", x.dataset.f === "all")); updFilterBtn();
   $("ttl").textContent = "A minha coleção"; $("fbanner").hidden = true; document.body.classList.remove("fv");
   refreshFv(); window.scrollTo(0, 0);
 }
+function setFvPanel(open) { $("fvpanel").hidden = !open; $("fvb").setAttribute("aria-expanded", open); }
 function refreshFv() {
   render(); if (view === "binder") renderBinder();
-  document.querySelectorAll("#fbanner [data-fb=get],#fbanner [data-fb=give]").forEach(b => b.classList.toggle("on", state.f === b.dataset.fb));
-  $("fbcmpb").classList.toggle("on", !!state.cmp); $("fbrow").hidden = !state.cmp;
-  document.querySelectorAll("#fbrow [data-cf]").forEach(b => b.classList.toggle("on", state.f === (b.dataset.cf === "all" ? "all" : "c_" + b.dataset.cf)));
+  const cur = FV_OPTS.find(o => o[0] === state.f);
+  document.querySelectorAll("#fvpanel [data-sel]").forEach(b => b.classList.toggle("on", b.dataset.sel === state.f));
+  const chk = $("fcmpchk"); if (chk) chk.checked = !!state.cmp;
+  $("fvcur").textContent = state.f !== "all" && cur ? cur[1] : (state.cmp ? "etiquetas" : "");
+  $("fvb").classList.toggle("active", state.f !== "all" || !!state.cmp);
 }
-$("fbanner").addEventListener("click", e => {
-  const b = e.target.closest("[data-fb]"); if (!b) return;
-  if (b.dataset.fb === "back") { leaveFriend(); return; }
-  if (b.dataset.fb === "cmp") {
-    state.cmp = !state.cmp; if (!state.cmp && /^c_/.test(state.f)) state.f = "all";
-    document.querySelectorAll("#flt button").forEach(x => x.classList.toggle("on", x.dataset.f === state.f)); updFilterBtn(); refreshFv(); return;
-  }
-  const same = state.f === b.dataset.fb;   // segundo clique volta a mostrar tudo
-  state.f = same ? "all" : b.dataset.fb;
-  if (!same) switchToList();
-  document.querySelectorAll("#flt button").forEach(x => x.classList.toggle("on", x.dataset.f === state.f));
-  updFilterBtn(); refreshFv();
+$("fvb").addEventListener("click", e => { e.stopPropagation(); setFvPanel($("fvpanel").hidden); });
+document.addEventListener("click", e => { if (!$("fvpanel").hidden && !e.target.closest("#fvwrap")) setFvPanel(false); });
+document.addEventListener("keydown", e => { if (e.key === "Escape") setFvPanel(false); });
+$("fvpanel").addEventListener("click", e => {
+  const o = e.target.closest("[data-sel]"); if (!o) return;
+  const sel = o.dataset.sel;
+  state.f = sel;
+  if (sel.startsWith("c_")) state.cmp = true;
+  if (sel === "get" || sel === "give" || sel.startsWith("c_")) switchToList();
+  document.querySelectorAll("#flt button").forEach(x => x.classList.toggle("on", x.dataset.f === state.f)); updFilterBtn();
+  refreshFv(); setFvPanel(false);
 });
-$("fbrow").addEventListener("click", e => {
-  const b = e.target.closest("[data-cf]"); if (!b) return;
-  state.f = b.dataset.cf === "all" ? "all" : "c_" + b.dataset.cf;
+$("fvpanel").addEventListener("change", e => {
+  if (e.target.id !== "fcmpchk") return;
+  state.cmp = e.target.checked; if (!state.cmp && state.f.startsWith("c_")) state.f = "all";
   document.querySelectorAll("#flt button").forEach(x => x.classList.toggle("on", x.dataset.f === state.f)); updFilterBtn(); refreshFv();
 });
+$("fbanner").addEventListener("click", e => { if (e.target.closest("[data-fb=back]")) leaveFriend(); });
 function switchToList() { if (view !== "list") { view = "list"; lsSet(VIEW_KEY, view); applyView(); } }
 // só leitura a sério: nada de alterar cartas enquanto se vê a coleção de outro
 $("main").addEventListener("click", e => { if (viewing && e.target.closest(".mini,.qb,.c")) { e.stopImmediatePropagation(); e.preventDefault(); } }, true);
