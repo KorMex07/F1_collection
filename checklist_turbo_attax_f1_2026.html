@@ -270,6 +270,18 @@
   .panel .opt:hover { border-color: #00d4ff; }
   .panel .opt + .plbl, .panel .plbl { margin-top: 12px; }
   @media (max-width: 640px) { .fb-act .pop { position: static; } .fb-act .panel { position: absolute; left: 16px; right: 16px; top: 100%; width: auto; max-width: none; margin-top: 4px; } .fb-act .btn.primary .lb { display: none; } }
+
+  /* pedir cartas */
+  .c.tsel { cursor: pointer; }
+  .c.tsel.sel { outline: 3px solid #00d4ff; outline-offset: -1px; background: rgba(0,212,255,.16); }
+  .c.tsel.sel::after { content: "✓"; position: absolute; top: 8px; right: 10px; width: 22px; height: 22px; border-radius: 50%; background: #00d4ff; color: #00141a; font-weight: 900; display: grid; place-items: center; font-size: 14px; }
+  .c.tsel .cmpt { display: none; }
+  #tbar { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 40; display: flex; gap: 12px; align-items: center; justify-content: space-between; width: min(560px, calc(100vw - 24px)); background: var(--panel); border: 1px solid #00d4ff; border-radius: 16px; padding: 10px 12px 10px 16px; box-shadow: 0 12px 36px rgba(0,0,0,.45); }
+  #tbar[hidden] { display: none; }
+  #tbar .tb-t { font-size: 14px; } #tbar .tb-b { display: flex; gap: 6px; }
+  #tbar .btn { padding: 8px 12px; } #tbar .btn[disabled] { opacity: .4; cursor: default; }
+  body.tb-on footer { padding-bottom: 90px; }
+  body.tb-on .toast { bottom: 90px; }
 </style>
 </head>
 <body>
@@ -390,7 +402,7 @@ class Collection {
   }
   get size() { return Object.keys(this.m).length; }
 }
-let have, dirty, viewing = null, mine = null, mineStamps = null;   // viewing: amigo cuja coleção está a ser vista (só leitura)
+let have, dirty, viewing = null, mine = null, mineStamps = null; const tradeSel = new Set(), rawIds = {};   // viewing: amigo cuja coleção está a ser vista (só leitura)
 try { have = new Collection(JSON.parse(lsGet(KEY) || "{}")); } catch (e) { have = new Collection(); }
 try { dirty = new Set(JSON.parse(lsGet(DIRTY_KEY) || "[]")); } catch (e) { dirty = new Set(); }
 if (!lsSet(KEY, JSON.stringify(have.m))) {
@@ -1027,7 +1039,8 @@ function render() {
     for (const c of g.shown) {
       const q = have.get(c.n);
       const cs = viewing && state.cmp ? cmpState(c.n) : "";
-      html += `<div class="c${q ? " have" : ""}${cs ? " cmp-" + cs : ""}" data-n="${esc(c.n)}">${cs ? cmpTag(c.n, cs) : ""}
+      const ts = viewing && state.f === "get" ? (tradeSel.has(c.n) ? " tsel sel" : " tsel") : "";
+      html += `<div class="c${q ? " have" : ""}${cs ? " cmp-" + cs : ""}${ts}" data-n="${esc(c.n)}">${cs ? cmpTag(c.n, cs) : ""}
         <span class="n">#${esc(c.n)}${q > 1 ? ` <b class="dupb">×${q}</b>` : ""}</span><span class="nm">${esc(titleOf(c))}</span>${c.name && c.team ? `<span class="tm">${esc(c.team)}</span>` : ""}
         ${q ? `<span class="qs"><button class="qb" data-d="-1" title="Menos uma">−</button><b>${q}</b><button class="qb" data-d="1" title="Mais uma">+</button></span>` : ""}</div>`;
     }
@@ -1055,11 +1068,31 @@ setInterval(() => { if (view === "binder" && !document.hidden) renderBinder(); }
 document.addEventListener("visibilitychange", () => { if (!document.hidden && view === "binder") renderBinder(); });
 // ---------- Amigos (ver a coleção do outro, só leitura, e trocas) ----------
 const FR_ERR = e => /function|schema cache|does not exist|relation/i.test((e && e.message) || "") ? "Falta correr o SQL de amigos no Supabase (ficheiro amigos.sql)." : ((e && e.message) || String(e));
+const SEEN_TR = "turbo-attax-f1-2026-seentrades";
+async function trList() { const { data, error } = await sb.rpc("my_trades"); if (error) throw error; return data || []; }
+const TR_ERR = { not_friends: "Já não estão ligados.", bad_request: "Pedido inválido.", too_many_pending: "Já tens 5 pedidos pendentes a este amigo.", nothing_available: "Essas cartas já não estão disponíveis (ele deixou de as repetir ou já as tens).", not_logged_in: "Inicia sessão." };
 async function frList() { const { data, error } = await sb.rpc("my_friends"); if (error) throw error; return data || []; }
 async function refreshFriendBadge() {
   const b = $("frd"); if (!b) return;
   let n = 0;
-  try { if (sb && session) n = (await frList()).filter(f => f.status === "pending" && f.incoming).length; } catch (e) {}
+  try {
+    if (sb && session) {
+      n = (await frList()).filter(f => f.status === "pending" && f.incoming).length;
+      try {
+        const tr = await trList();
+        n += tr.filter(t => t.status === "pending" && t.incoming).length;
+        // pedidos meus que o amigo aceitou entretanto: atualiza a minha coleção e avisa
+        let seen = []; try { seen = JSON.parse(lsGet(SEEN_TR) || "[]"); } catch (e) {}
+        const fresh = tr.filter(t => t.status === "accepted" && !t.incoming && !seen.includes(t.id));
+        if (fresh.length) {
+          lsSet(SEEN_TR, JSON.stringify(seen.concat(fresh.map(t => t.id)).slice(-200)));
+          const k = fresh.reduce((a, t) => a + (t.moved || []).length, 0);
+          toast(k ? `${fresh[0].email.split("@")[0]} aceitou o pedido: ${k} carta${k > 1 ? "s" : ""} nova${k > 1 ? "s" : ""} na tua coleção` : "Pedido aceite");
+          if (!viewing) syncNow();
+        }
+      } catch (e) {}
+    }
+  } catch (e) {}
   b.innerHTML = `<span class="ic">👥</span><span class="lb">Amigos</span>${n ? `<b class="bdg">${n}</b>` : ""}`;
 }
 const FV_OPTS = [["all", "Todas as cartas dele"], ["c_both", "Ambos têm"], ["c_his", "Só ele tem"], ["c_mine", "Só eu tenho"], ["c_none", "Nenhum tem"], ["get", "Repetidas dele que me faltam"], ["give", "Minhas repetidas que lhe faltam"]];
@@ -1076,7 +1109,8 @@ async function enterFriend(f) {
   catch (e) { toast(FR_ERR(e)); return; }
   if (!viewing) { mine = have; mineStamps = stamps; }
   const m = {}, st = {};
-  for (const r of rows) { const c = BYID[compact(r.card_id)]; if (c && r.qty > 0) { m[c.n] = r.qty; if (r.added_at) st[c.n] = Date.parse(r.added_at) || 0; } }
+  for (const r of rows) { const c = BYID[compact(r.card_id)]; if (c && r.qty > 0) { m[c.n] = r.qty; rawIds[c.n] = r.card_id; if (r.added_at) st[c.n] = Date.parse(r.added_at) || 0; } }
+  tradeSel.clear();
   viewing = f;
   have = new Collection(m); have.onchange = null; stamps = st;
   state.f = "all"; state.cmp = false;
@@ -1092,7 +1126,7 @@ async function enterFriend(f) {
 }
 function leaveFriend() {
   if (!viewing) return;
-  have = mine; stamps = mineStamps; viewing = null; mine = null; mineStamps = null;
+  have = mine; stamps = mineStamps; viewing = null; mine = null; mineStamps = null; tradeSel.clear();
   state.f = "all"; state.cmp = false; setFvPanel(false);
   document.querySelectorAll("#flt button").forEach(x => x.classList.toggle("on", x.dataset.f === "all")); updFilterBtn();
   $("ttl").textContent = "A minha coleção"; $("fbanner").hidden = true; document.body.classList.remove("fv");
@@ -1106,6 +1140,42 @@ function refreshFv() {
   const chk = $("fcmpchk"); if (chk) chk.checked = !!state.cmp;
   $("fvcur").textContent = state.f !== "all" && cur ? cur[1] : (state.cmp ? "etiquetas" : "");
   $("fvb").classList.toggle("active", state.f !== "all" || !!state.cmp);
+  updTbar();
+}
+// ---- pedir cartas: selecionar repetidas dele que me faltam e enviar pedido ----
+function updTbar() {
+  let bar = $("tbar");
+  if (!bar) { bar = document.createElement("div"); bar.id = "tbar"; bar.hidden = true; document.body.appendChild(bar);
+    bar.addEventListener("click", e => {
+      const b = e.target.closest("[data-t]"); if (!b) return;
+      if (b.dataset.t === "all") CARDS.forEach(c => { if (have.get(c.n) > 1 && !mine.has(c.n)) tradeSel.add(c.n); });
+      if (b.dataset.t === "none") tradeSel.clear();
+      if (b.dataset.t === "send") { sendTrade(); return; }
+      render(); updTbar();
+    }); }
+  const on = viewing && state.f === "get";
+  bar.hidden = !on; document.body.classList.toggle("tb-on", !!on);
+  if (!on) return;
+  const n = tradeSel.size;
+  bar.innerHTML = `<span class="tb-t">${n ? `<b>${n}</b> carta${n > 1 ? "s" : ""} escolhida${n > 1 ? "s" : ""}` : "Toca nas cartas que queres pedir"}</span>
+    <span class="tb-b"><button class="btn" data-t="all">Todas</button><button class="btn" data-t="none"${n ? "" : " disabled"}>Limpar</button><button class="btn primary" data-t="send"${n ? "" : " disabled"}>Pedir ${n || ""}</button></span>`;
+}
+function sendTrade() {
+  const ids = [...tradeSel]; if (!ids.length || !viewing) return;
+  const f = viewing;
+  const m = modal(`<h2>Pedir ${ids.length} carta${ids.length > 1 ? "s" : ""}?</h2>
+    <p class="hint">Vai ser enviado um pedido a <b>${esc(f.email)}</b>. Se ele aceitar, é-lhe retirada <b>1 cópia de cada</b> e passa para a tua coleção. Se não aceitar, nada muda.</p>
+    <div>${ids.map(n => { const c = BYID[compact(n)]; return `<span class="tchip" style="--ac:${GROUP_COLOR(c.sub)}"><b>#${esc(c.n)}</b> ${esc(titleOf(c))}</span>`; }).join("")}</div>
+    <div class="row"><button class="btn primary" id="tsend">Enviar pedido</button><button class="btn" id="tcancel">Cancelar</button></div>`);
+  m.querySelector("#tcancel").onclick = m.close;
+  m.querySelector("#tsend").onclick = async () => {
+    m.querySelector("#tsend").disabled = true;
+    const { data, error } = await sb.rpc("request_trade", { p_friend: f.other_id, p_cards: ids.map(n => rawIds[n] || n) });
+    m.close();
+    if (error) { toast(FR_ERR(error).replace("Falta correr o SQL de amigos no Supabase (ficheiro amigos.sql).", "Falta correr o SQL das trocas no Supabase (ficheiro trocas.sql).")); return; }
+    if (data === "sent") { toast("Pedido enviado. Fica pendente até ele aceitar."); tradeSel.clear(); render(); updTbar(); }
+    else toast(TR_ERR[data] || String(data));
+  };
 }
 $("fvb").addEventListener("click", e => { e.stopPropagation(); setFvPanel($("fvpanel").hidden); });
 document.addEventListener("click", e => { if (!$("fvpanel").hidden && !e.target.closest("#fvwrap")) setFvPanel(false); });
@@ -1127,7 +1197,15 @@ $("fvpanel").addEventListener("change", e => {
 $("fbanner").addEventListener("click", e => { if (e.target.closest("[data-fb=back]")) leaveFriend(); });
 function switchToList() { if (view !== "list") { view = "list"; lsSet(VIEW_KEY, view); applyView(); } }
 // só leitura a sério: nada de alterar cartas enquanto se vê a coleção de outro
-$("main").addEventListener("click", e => { if (viewing && e.target.closest(".mini,.qb,.c")) { e.stopImmediatePropagation(); e.preventDefault(); } }, true);
+$("main").addEventListener("click", e => {
+  if (!viewing) return;
+  const c = e.target.closest(".c");
+  if (c && state.f === "get" && !e.target.closest(".mini,.qb,img.thumb")) {   // modo pedir: a carta alterna entre escolhida/não
+    const n = c.dataset.n; if (tradeSel.has(n)) tradeSel.delete(n); else tradeSel.add(n);
+    c.classList.toggle("sel", tradeSel.has(n)); updTbar(); e.stopImmediatePropagation(); e.preventDefault(); return;
+  }
+  if (e.target.closest(".mini,.qb,.c")) { e.stopImmediatePropagation(); e.preventDefault(); }
+}, true);
 $("binder").addEventListener("click", e => { if (viewing && e.target.closest(".pk")) e.stopImmediatePropagation(); }, true);
 async function openFriends() {
   if (!sb || !session) { toast("Inicia sessão (botão no topo) para usar os amigos"); return; }
@@ -1135,6 +1213,11 @@ async function openFriends() {
   async function draw(msg) {
     let list;
     try { list = await frList(); } catch (e) { m.querySelector(".box").innerHTML = `<h2>Amigos</h2><p class="hint">${esc(FR_ERR(e))}</p><div class="row"><button class="btn" id="fx">Fechar</button></div>`; m.querySelector("#fx").onclick = m.close; return; }
+    let trades = []; try { trades = await trList(); } catch (e) { trades = []; }
+    const tIn = trades.filter(t => t.status === "pending" && t.incoming), tOut = trades.filter(t => t.status === "pending" && !t.incoming), tDone = trades.filter(t => t.status !== "pending").slice(0, 5);
+    const chips = ids => (ids || []).map(id => { const c = BYID[compact(id)]; return c ? `<span class="tchip" style="--ac:${GROUP_COLOR(c.sub)}"><b>#${esc(c.n)}</b> ${esc(titleOf(c))}</span>` : ""; }).join("");
+    const tRow = (t, btns) => `<div class="cand" style="flex-direction:column;align-items:stretch"><div class="row" style="margin:0;justify-content:space-between"><div class="t">${esc(t.email)} <span class="hint">· ${t.cards.length} carta${t.cards.length > 1 ? "s" : ""}</span></div><div class="row" style="margin:0">${btns}</div></div><div style="margin-top:6px">${chips(t.cards)}</div></div>`;
+    const stTxt = { accepted: "aceite", declined: "recusado", cancelled: "cancelado" };
     const inc = list.filter(f => f.status === "pending" && f.incoming), out = list.filter(f => f.status === "pending" && !f.incoming), ok = list.filter(f => f.status === "accepted");
     const row = (f, btns) => `<div class="cand"><div><div class="t">${esc(f.email)}</div></div><div class="row" style="margin:0">${btns}</div></div>`;
     m.querySelector(".box").innerHTML = `<h2>Amigos</h2>
@@ -1143,6 +1226,9 @@ async function openFriends() {
       ${inc.length ? `<h3>Pedidos recebidos</h3>${inc.map(f => row(f, `<button class="btn ok" data-a="acc" data-id="${f.id}">Aceitar</button><button class="btn" data-a="del" data-id="${f.id}">Recusar</button>`)).join("")}` : ""}
       ${ok.length ? `<h3>Ligados</h3>${ok.map(f => row(f, `<button class="btn primary" data-a="view" data-id="${f.id}">Ver coleção</button><button class="btn" data-a="del" data-id="${f.id}" data-rm="1">Remover</button>`)).join("")}` : ""}
       ${out.length ? `<h3>Pedidos enviados</h3>${out.map(f => row(f, `<span class="hint">à espera…</span><button class="btn" data-a="del" data-id="${f.id}">Cancelar</button>`)).join("")}` : ""}
+      ${tIn.length ? `<h3>Pedidos de cartas recebidos</h3><p class="hint">Se aceitares, damos <b>1 cópia de cada</b> carta a quem pediu (só as que ainda forem repetidas tuas).</p>${tIn.map(t => tRow(t, `<button class="btn ok" data-ta="acc" data-id="${t.id}">Aceitar</button><button class="btn" data-ta="dec" data-id="${t.id}">Recusar</button>`)).join("")}` : ""}
+      ${tOut.length ? `<h3>Pedidos de cartas enviados</h3>${tOut.map(t => tRow(t, `<span class="hint">à espera…</span><button class="btn" data-ta="can" data-id="${t.id}">Cancelar</button>`)).join("")}` : ""}
+      ${tDone.length ? `<h3>Pedidos recentes</h3>${tDone.map(t => `<p class="hint" style="margin:2px 0">${t.incoming ? "De" : "Para"} ${esc(t.email)}: ${t.cards.length} carta${t.cards.length > 1 ? "s" : ""} — <b>${stTxt[t.status] || t.status}</b>${t.status === "accepted" ? ` (${(t.moved || []).length} passaram)` : ""}</p>`).join("")}` : ""}
       <h3>Enviar pedido</h3>
       <div class="row" style="margin-top:0"><input type="email" id="fem" placeholder="email do amigo" style="flex:1;min-width:180px"><button class="btn primary" id="fadd">Enviar pedido</button></div>
       <div class="row"><button class="btn" id="fx">Fechar</button></div>`;
@@ -1154,6 +1240,24 @@ async function openFriends() {
       if (error) { draw(FR_ERR(error)); return; }
       draw({ sent: "Pedido enviado. Falta o outro aceitar.", accepted: "Ele já tinha pedido: ligação feita!", not_found: "Não existe nenhum utilizador com esse email.", self: "Esse é o teu próprio email.", already_friends: "Já estão ligados.", already_sent: "Já enviaste um pedido a este utilizador." }[data] || String(data));
     };
+    box.querySelectorAll("[data-ta]").forEach(b => b.onclick = async () => {
+      const id = Number(b.dataset.id), a = b.dataset.ta;
+      b.disabled = true;
+      try {
+        if (a === "acc") {
+          if (viewing) leaveFriend();
+          await flush(true);   // envia primeiro as minhas alterações pendentes, para o servidor ter o estado certo
+          const { data, error } = await sb.rpc("accept_trade", { p_id: id });
+          if (error) throw error; if (data && data.error) throw new Error(data.error === "not_friends" ? "Já não estão ligados." : "Este pedido já não é válido.");
+          await syncNow(); refreshFriendBadge();
+          const mv = (data.moved || []).length, sk = (data.skipped || []).length;
+          draw(`${mv} carta${mv === 1 ? "" : "s"} passou${mv === 1 ? "" : "ram"} para o teu amigo.${sk ? ` ${sk} já não estava${sk > 1 ? "m" : ""} disponível${sk > 1 ? "is" : ""} e ficou${sk > 1 ? "aram" : ""} de fora.` : ""}`);
+        } else {
+          const r = await sb.rpc(a === "dec" ? "decline_trade" : "cancel_trade", { p_id: id }); if (r.error) throw r.error;
+          refreshFriendBadge(); draw("Feito.");
+        }
+      } catch (e) { draw(FR_ERR(e)); }
+    });
     box.querySelectorAll("[data-a]").forEach(b => b.onclick = async () => {
       const id = Number(b.dataset.id), f = list.find(x => x.id === id), a = b.dataset.a;
       if (a === "view") { m.close(); enterFriend(f); return; }
