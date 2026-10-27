@@ -282,6 +282,27 @@
   #tbar .btn { padding: 8px 12px; } #tbar .btn[disabled] { opacity: .4; cursor: default; }
   body.tb-on footer { padding-bottom: 90px; }
   body.tb-on .toast { bottom: 90px; }
+
+  /* ---------- notificação e página de pedido de cartas ---------- */
+  .tnote { background: linear-gradient(90deg, rgba(225,6,0,.16), rgba(225,6,0,.05)); border-bottom: 1px solid rgba(225,6,0,.45); padding: 8px 16px; }
+  .tnote[hidden] { display: none; }
+  .tn-in { display: flex; flex-direction: column; gap: 6px; }
+  .tn-row { display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; font-size: 14px; }
+  .tn-row .btn { padding: 6px 14px; }
+  body.tv #main, body.tv #binder, body.tv .tools, body.tv .fbanner, body.tv #tbar, body.tv .tnote { display: none !important; }
+  #tradeview { padding: 0 16px 30px; }
+  #tradeview[hidden] { display: none; }
+  .tv-bar { position: sticky; top: 0; z-index: 15; background: var(--bg); border-bottom: 1px solid var(--line); padding: 14px 0; margin-bottom: 14px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
+  .tv-t { font-size: 20px; font-weight: 800; }
+  .tv-act { display: flex; gap: 8px; flex-wrap: wrap; } .tv-act .btn { padding: 9px 18px; font-weight: 600; }
+  .tv-g { background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--ac); border-radius: 12px; padding: 4px 14px 14px; margin-bottom: 12px; }
+  .tv-g h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; margin: 12px 0 8px; } .tv-g h3 small { color: var(--muted); font-weight: 400; margin-left: 6px; }
+  .tv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px; }
+  .tv-c { background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; display: flex; flex-direction: column; gap: 2px; }
+  .tv-c .n { font-size: 12px; color: var(--muted); font-weight: 700; } .tv-c .nm { font-weight: 700; } .tv-c .tm { font-size: 12px; color: var(--muted); }
+  .tv-c .tq { font-size: 12px; color: var(--have); font-weight: 600; margin-top: 2px; }
+  .tv-c.gone { opacity: .55; } .tv-c.gone .tq { color: #ff9f1a; }
+  @media (max-width: 640px) { .tv-act { width: 100%; } .tv-act .btn { flex: 1; } .tv-grid { grid-template-columns: 1fr 1fr; } }
 </style>
 </head>
 <body>
@@ -312,6 +333,7 @@
     <button class="btn primary tb" data-fb="back"><span class="ic">←</span><span class="lb">A minha coleção</span></button>
   </span>
 </div></div>
+<div class="tnote" id="tnote" hidden></div>
 <nav class="tools"><div class="wrap controls">
   <div class="seg" id="vw"><button data-v="list" class="on">Lista</button><button data-v="binder">Caderneta</button></div>
   <label class="srch lst-only"><span class="si">🔍</span><input type="search" id="q" placeholder="Pesquisar piloto, equipa, nº ou série…"></label>
@@ -340,6 +362,7 @@
 </div></nav>
 <main class="wrap" id="main"></main>
 <section class="wrap" id="binder"></section>
+<section class="wrap" id="tradeview" hidden></section>
 <footer>
   <button class="btn" id="odds">🎲 Probabilidades</button>
   <button class="btn" id="exp">Exportar cópia</button>
@@ -1074,13 +1097,13 @@ const TR_ERR = { not_friends: "Já não estão ligados.", bad_request: "Pedido i
 async function frList() { const { data, error } = await sb.rpc("my_friends"); if (error) throw error; return data || []; }
 async function refreshFriendBadge() {
   const b = $("frd"); if (!b) return;
-  let n = 0;
+  let n = 0, inc = [];
   try {
     if (sb && session) {
       n = (await frList()).filter(f => f.status === "pending" && f.incoming).length;
       try {
         const tr = await trList();
-        n += tr.filter(t => t.status === "pending" && t.incoming).length;
+        inc = tr.filter(t => t.status === "pending" && t.incoming); n += inc.length;
         // pedidos meus que o amigo aceitou entretanto: atualiza a minha coleção e avisa
         let seen = []; try { seen = JSON.parse(lsGet(SEEN_TR) || "[]"); } catch (e) {}
         const fresh = tr.filter(t => t.status === "accepted" && !t.incoming && !seen.includes(t.id));
@@ -1093,6 +1116,7 @@ async function refreshFriendBadge() {
       } catch (e) {}
     }
   } catch (e) {}
+  renderTNote(inc);
   b.innerHTML = `<span class="ic">👥</span><span class="lb">Amigos</span>${n ? `<b class="bdg">${n}</b>` : ""}`;
 }
 const FV_OPTS = [["all", "Todas as cartas dele"], ["c_both", "Ambos têm"], ["c_his", "Só ele tem"], ["c_mine", "Só eu tenho"], ["c_none", "Nenhum tem"], ["get", "Repetidas dele que me faltam"], ["give", "Minhas repetidas que lhe faltam"]];
@@ -1216,7 +1240,7 @@ async function openFriends() {
     let trades = []; try { trades = await trList(); } catch (e) { trades = []; }
     const tIn = trades.filter(t => t.status === "pending" && t.incoming), tOut = trades.filter(t => t.status === "pending" && !t.incoming), tDone = trades.filter(t => t.status !== "pending").slice(0, 5);
     const chips = ids => (ids || []).map(id => { const c = BYID[compact(id)]; return c ? `<span class="tchip" style="--ac:${GROUP_COLOR(c.sub)}"><b>#${esc(c.n)}</b> ${esc(titleOf(c))}</span>` : ""; }).join("");
-    const tRow = (t, btns) => `<div class="cand" style="flex-direction:column;align-items:stretch"><div class="row" style="margin:0;justify-content:space-between"><div class="t">${esc(t.email)} <span class="hint">· ${t.cards.length} carta${t.cards.length > 1 ? "s" : ""}</span></div><div class="row" style="margin:0">${btns}</div></div><div style="margin-top:6px">${chips(t.cards)}</div></div>`;
+    const tRow = (t, btns) => `<div class="cand"><div><div class="t">${esc(t.email.split("@")[0])}</div><div class="s">${t.cards.length} carta${t.cards.length > 1 ? "s" : ""}</div></div><div class="row" style="margin:0">${btns}</div></div>`;
     const stTxt = { accepted: "aceite", declined: "recusado", cancelled: "cancelado" };
     const inc = list.filter(f => f.status === "pending" && f.incoming), out = list.filter(f => f.status === "pending" && !f.incoming), ok = list.filter(f => f.status === "accepted");
     const row = (f, btns) => `<div class="cand"><div><div class="t">${esc(f.email)}</div></div><div class="row" style="margin:0">${btns}</div></div>`;
@@ -1226,7 +1250,7 @@ async function openFriends() {
       ${inc.length ? `<h3>Pedidos recebidos</h3>${inc.map(f => row(f, `<button class="btn ok" data-a="acc" data-id="${f.id}">Aceitar</button><button class="btn" data-a="del" data-id="${f.id}">Recusar</button>`)).join("")}` : ""}
       ${ok.length ? `<h3>Ligados</h3>${ok.map(f => row(f, `<button class="btn primary" data-a="view" data-id="${f.id}">Ver coleção</button><button class="btn" data-a="del" data-id="${f.id}" data-rm="1">Remover</button>`)).join("")}` : ""}
       ${out.length ? `<h3>Pedidos enviados</h3>${out.map(f => row(f, `<span class="hint">à espera…</span><button class="btn" data-a="del" data-id="${f.id}">Cancelar</button>`)).join("")}` : ""}
-      ${tIn.length ? `<h3>Pedidos de cartas recebidos</h3><p class="hint">Se aceitares, damos <b>1 cópia de cada</b> carta a quem pediu (só as que ainda forem repetidas tuas).</p>${tIn.map(t => tRow(t, `<button class="btn ok" data-ta="acc" data-id="${t.id}">Aceitar</button><button class="btn" data-ta="dec" data-id="${t.id}">Recusar</button>`)).join("")}` : ""}
+      ${tIn.length ? `<h3>Pedidos de cartas recebidos</h3>${tIn.map(t => tRow(t, `<button class="btn primary" data-tv="${t.id}">Ver pedido</button>`)).join("")}` : ""}
       ${tOut.length ? `<h3>Pedidos de cartas enviados</h3>${tOut.map(t => tRow(t, `<span class="hint">à espera…</span><button class="btn" data-ta="can" data-id="${t.id}">Cancelar</button>`)).join("")}` : ""}
       ${tDone.length ? `<h3>Pedidos recentes</h3>${tDone.map(t => `<p class="hint" style="margin:2px 0">${t.incoming ? "De" : "Para"} ${esc(t.email)}: ${t.cards.length} carta${t.cards.length > 1 ? "s" : ""} — <b>${stTxt[t.status] || t.status}</b>${t.status === "accepted" ? ` (${(t.moved || []).length} passaram)` : ""}</p>`).join("")}` : ""}
       <h3>Enviar pedido</h3>
@@ -1240,6 +1264,7 @@ async function openFriends() {
       if (error) { draw(FR_ERR(error)); return; }
       draw({ sent: "Pedido enviado. Falta o outro aceitar.", accepted: "Ele já tinha pedido: ligação feita!", not_found: "Não existe nenhum utilizador com esse email.", self: "Esse é o teu próprio email.", already_friends: "Já estão ligados.", already_sent: "Já enviaste um pedido a este utilizador." }[data] || String(data));
     };
+    box.querySelectorAll("[data-tv]").forEach(b => b.onclick = () => { const t = tIn.find(x => String(x.id) === b.dataset.tv); if (t) openTradeView(t); });
     box.querySelectorAll("[data-ta]").forEach(b => b.onclick = async () => {
       const id = Number(b.dataset.id), a = b.dataset.ta;
       b.disabled = true;
@@ -1269,6 +1294,55 @@ async function openFriends() {
   }
   draw();
 }
+
+// ---------- pedidos de cartas recebidos: notificação + página do pedido ----------
+function renderTNote(list) {
+  const el = $("tnote"); if (!el) return;
+  if (!list.length) { el.hidden = true; el.innerHTML = ""; return; }
+  el.innerHTML = `<div class="wrap tn-in">` + list.slice(0, 3).map(t =>
+    `<div class="tn-row"><span>🔔 <b>${esc(t.email.split("@")[0])}</b> pediu-te <b>${t.cards.length} carta${t.cards.length > 1 ? "s" : ""}</b></span><button class="btn primary" data-tvn="${t.id}">Ver pedido</button></div>`).join("") +
+    (list.length > 3 ? `<div class="hint" style="margin:0">+ ${list.length - 3} pedidos (em 👥 Amigos)</div>` : "") + `</div>`;
+  el.hidden = false; el._list = list;
+}
+$("tnote").addEventListener("click", e => {
+  const b = e.target.closest("[data-tvn]"); if (!b) return;
+  const t = ($("tnote")._list || []).find(x => String(x.id) === b.dataset.tvn); if (t) openTradeView(t);
+});
+function openTradeView(t) {
+  if (viewing) leaveFriend();
+  document.querySelectorAll(".modal").forEach(x => x.close && x.close());
+  const groups = [], idx = {};
+  for (const c of CARDS) { if (!t.cards.some(id => compact(id) === compact(c.n))) continue; if (!(c.sub in idx)) { idx[c.sub] = groups.length; groups.push({ sub: c.sub, cs: [] }); } groups[idx[c.sub]].cs.push(c); }
+  const name = t.email.split("@")[0], n = t.cards.length;
+  $("tradeview").innerHTML = `<div class="tv-bar">
+      <div><div class="tv-t">Pedido de ${esc(name)}</div><div class="hint" style="margin:2px 0 0">Quer <b>${n} carta${n > 1 ? "s" : ""}</b> das tuas repetidas. Se aceitares, passas <b>1 cópia de cada</b>.</div></div>
+      <div class="tv-act"><button class="btn" data-tva="back">← Voltar</button><button class="btn" data-tva="dec">Recusar</button><button class="btn ok" data-tva="acc">Aceitar</button></div>
+    </div>
+    ${groups.map(g => `<section class="tv-g" style="--ac:${GROUP_COLOR(g.sub)}"><h3>${esc(cleanSub(g.sub))} <small>${g.cs.length}</small></h3><div class="tv-grid">${g.cs.map(c => { const q = have.get(c.n);
+      return `<div class="tv-c${q > 1 ? "" : " gone"}"><span class="n">#${esc(c.n)}</span><span class="nm">${esc(titleOf(c))}</span>${c.name && c.team ? `<span class="tm">${esc(c.team)}</span>` : ""}<span class="tq">${q > 1 ? `tens ×${q}` : "já não é repetida · fica de fora"}</span></div>`; }).join("")}</div></section>`).join("")}`;
+  $("tradeview").dataset.id = t.id; $("tradeview").hidden = false; document.body.classList.add("tv"); window.scrollTo(0, 0);
+}
+function closeTradeView() { $("tradeview").hidden = true; document.body.classList.remove("tv"); }
+$("tradeview").addEventListener("click", async e => {
+  const b = e.target.closest("[data-tva]"); if (!b) return;
+  const a = b.dataset.tva, id = Number($("tradeview").dataset.id);
+  if (a === "back") { closeTradeView(); return; }
+  document.querySelectorAll("#tradeview [data-tva]").forEach(x => x.disabled = true);
+  try {
+    if (a === "acc") {
+      await flush(true);
+      const { data, error } = await sb.rpc("accept_trade", { p_id: id });
+      if (error) throw error; if (data && data.error) throw new Error(data.error === "not_friends" ? "Já não estão ligados." : "Este pedido já não é válido.");
+      await syncNow();
+      const mv = (data.moved || []).length, sk = (data.skipped || []).length;
+      toast(`${mv} carta${mv === 1 ? "" : "s"} passou${mv === 1 ? "" : "ram"} para o teu amigo.${sk ? ` ${sk} ficou${sk > 1 ? "aram" : ""} de fora (já não ${sk > 1 ? "estavam disponíveis" : "estava disponível"}).` : ""}`);
+    } else {
+      const r = await sb.rpc("decline_trade", { p_id: id }); if (r.error) throw r.error;
+      toast("Pedido recusado.");
+    }
+    closeTradeView(); refreshFriendBadge();
+  } catch (err) { document.querySelectorAll("#tradeview [data-tva]").forEach(x => x.disabled = false); toast(FR_ERR(err)); }
+});
 
 $("frd").addEventListener("click", openFriends);
 $("main").addEventListener("click", e => {
