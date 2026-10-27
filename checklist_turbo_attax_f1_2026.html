@@ -303,6 +303,13 @@
   .tv-c .tq { font-size: 12px; color: var(--have); font-weight: 600; margin-top: 2px; }
   .tv-c.gone { opacity: .55; } .tv-c.gone .tq { color: #ff9f1a; }
   @media (max-width: 640px) { .tv-act { width: 100%; } .tv-act .btn { flex: 1; } .tv-grid { grid-template-columns: 1fr 1fr; } }
+
+  /* janela de amigos com separadores */
+  .ftabs { display: flex; width: 100%; margin: 10px 0 4px; } .ftabs button { flex: 1; padding: 9px 6px; font-size: 14px; font-weight: 600; }
+  .tbdg { display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px; margin-left: 6px; border-radius: 99px; background: var(--accent); color: #fff; font-size: 11px; }
+  .ftabs button.on .tbdg { background: #fff; color: var(--accent); }
+  .fpane { min-height: 170px; } .fpane h3:first-child { margin-top: 12px; }
+  .fnote { margin: 4px 0 10px; }
 </style>
 </head>
 <body>
@@ -1234,31 +1241,43 @@ $("binder").addEventListener("click", e => { if (viewing && e.target.closest(".p
 async function openFriends() {
   if (!sb || !session) { toast("Inicia sessão (botão no topo) para usar os amigos"); return; }
   const m = modal(`<h2>Amigos</h2><p class="hint">A carregar…</p>`);
-  async function draw(msg) {
-    let list;
-    try { list = await frList(); } catch (e) { m.querySelector(".box").innerHTML = `<h2>Amigos</h2><p class="hint">${esc(FR_ERR(e))}</p><div class="row"><button class="btn" id="fx">Fechar</button></div>`; m.querySelector("#fx").onclick = m.close; return; }
-    let trades = []; try { trades = await trList(); } catch (e) { trades = []; }
+  let tab = null, cache = null;
+  async function draw(msg, noFetch) {
+    let list, trades;
+    if (noFetch && cache) ({ list, trades } = cache);
+    else {
+      try { list = await frList(); } catch (e) { m.querySelector(".box").innerHTML = `<h2>Amigos</h2><p class="hint">${esc(FR_ERR(e))}</p><div class="row"><button class="btn" id="fx">Fechar</button></div>`; m.querySelector("#fx").onclick = m.close; return; }
+      trades = []; try { trades = await trList(); } catch (e) { trades = []; }
+      cache = { list, trades };
+    }
     const tIn = trades.filter(t => t.status === "pending" && t.incoming), tOut = trades.filter(t => t.status === "pending" && !t.incoming), tDone = trades.filter(t => t.status !== "pending").slice(0, 5);
-    const chips = ids => (ids || []).map(id => { const c = BYID[compact(id)]; return c ? `<span class="tchip" style="--ac:${GROUP_COLOR(c.sub)}"><b>#${esc(c.n)}</b> ${esc(titleOf(c))}</span>` : ""; }).join("");
     const tRow = (t, btns) => `<div class="cand"><div><div class="t">${esc(t.email.split("@")[0])}</div><div class="s">${t.cards.length} carta${t.cards.length > 1 ? "s" : ""}</div></div><div class="row" style="margin:0">${btns}</div></div>`;
     const stTxt = { accepted: "aceite", declined: "recusado", cancelled: "cancelado" };
     const inc = list.filter(f => f.status === "pending" && f.incoming), out = list.filter(f => f.status === "pending" && !f.incoming), ok = list.filter(f => f.status === "accepted");
     const row = (f, btns) => `<div class="cand"><div><div class="t">${esc(f.email)}</div></div><div class="row" style="margin:0">${btns}</div></div>`;
+    if (!tab) tab = tIn.length ? "trades" : "friends";
+    const note = txt => `<p class="hint fnote">${txt}</p>`;
+    const panes = {
+      friends: `${inc.length ? `<h3>Pedidos de ligação</h3>${inc.map(f => row(f, `<button class="btn ok" data-a="acc" data-id="${f.id}">Aceitar</button><button class="btn" data-a="del" data-id="${f.id}">Recusar</button>`)).join("")}` : ""}
+        <h3>Os teus amigos</h3>${ok.length ? ok.map(f => row(f, `<button class="btn primary" data-a="view" data-id="${f.id}">Ver coleção</button><button class="btn" data-a="del" data-id="${f.id}" data-rm="1">Remover</button>`)).join("") : note("Ainda não tens nenhum amigo ligado. Usa o separador <b>Adicionar</b> para enviar um pedido.")}
+        ${out.length ? `<h3>À espera de resposta</h3>${out.map(f => row(f, `<span class="hint">à espera…</span><button class="btn" data-a="del" data-id="${f.id}">Cancelar</button>`)).join("")}` : ""}`,
+      add: `<h3>Adicionar um amigo</h3>${note("Escreve o email com que o teu amigo se registou. Só depois de ele aceitar é que passam a ver a coleção um do outro (sempre só leitura).")}
+        <div class="row" style="margin-top:0"><input type="email" id="fem" placeholder="email do amigo" style="flex:1;min-width:180px"><button class="btn primary" id="fadd">Enviar pedido</button></div>`,
+      trades: `${tIn.length ? `<h3>Recebidos</h3>${tIn.map(t => tRow(t, `<button class="btn primary" data-tv="${t.id}">Ver pedido</button>`)).join("")}` : ""}
+        ${tOut.length ? `<h3>Enviados</h3>${tOut.map(t => tRow(t, `<span class="hint">à espera…</span><button class="btn" data-ta="can" data-id="${t.id}">Cancelar</button>`)).join("")}` : ""}
+        ${tDone.length ? `<h3>Recentes</h3>${tDone.map(t => `<p class="hint" style="margin:2px 0">${t.incoming ? "De" : "Para"} ${esc(t.email.split("@")[0])}: ${t.cards.length} carta${t.cards.length > 1 ? "s" : ""} — <b>${stTxt[t.status] || t.status}</b>${t.status === "accepted" ? ` (${(t.moved || []).length} passaram)` : ""}</p>`).join("")}` : ""}
+        ${tIn.length || tOut.length || tDone.length ? "" : note("Ainda não há pedidos de cartas. Na coleção de um amigo, usa <b>Pedir cartas</b> para escolher repetidas dele.")}`
+    };
+    const tabBtn = (k, label, n) => `<button data-tab="${k}" class="${tab === k ? "on" : ""}">${label}${n ? `<b class="tbdg">${n}</b>` : ""}</button>`;
     m.querySelector(".box").innerHTML = `<h2>Amigos</h2>
-      <p class="hint">Só depois de os dois aceitarem é que cada um passa a ver a coleção do outro. É sempre só leitura: ninguém altera as cartas do outro.</p>
+      <div class="seg ftabs">${tabBtn("friends", "Amigos", inc.length)}${tabBtn("add", "Adicionar", 0)}${tabBtn("trades", "Pedidos de cartas", tIn.length)}</div>
       ${msg ? `<p class="hint"><b>${esc(msg)}</b></p>` : ""}
-      ${inc.length ? `<h3>Pedidos recebidos</h3>${inc.map(f => row(f, `<button class="btn ok" data-a="acc" data-id="${f.id}">Aceitar</button><button class="btn" data-a="del" data-id="${f.id}">Recusar</button>`)).join("")}` : ""}
-      ${ok.length ? `<h3>Ligados</h3>${ok.map(f => row(f, `<button class="btn primary" data-a="view" data-id="${f.id}">Ver coleção</button><button class="btn" data-a="del" data-id="${f.id}" data-rm="1">Remover</button>`)).join("")}` : ""}
-      ${out.length ? `<h3>Pedidos enviados</h3>${out.map(f => row(f, `<span class="hint">à espera…</span><button class="btn" data-a="del" data-id="${f.id}">Cancelar</button>`)).join("")}` : ""}
-      ${tIn.length ? `<h3>Pedidos de cartas recebidos</h3>${tIn.map(t => tRow(t, `<button class="btn primary" data-tv="${t.id}">Ver pedido</button>`)).join("")}` : ""}
-      ${tOut.length ? `<h3>Pedidos de cartas enviados</h3>${tOut.map(t => tRow(t, `<span class="hint">à espera…</span><button class="btn" data-ta="can" data-id="${t.id}">Cancelar</button>`)).join("")}` : ""}
-      ${tDone.length ? `<h3>Pedidos recentes</h3>${tDone.map(t => `<p class="hint" style="margin:2px 0">${t.incoming ? "De" : "Para"} ${esc(t.email)}: ${t.cards.length} carta${t.cards.length > 1 ? "s" : ""} — <b>${stTxt[t.status] || t.status}</b>${t.status === "accepted" ? ` (${(t.moved || []).length} passaram)` : ""}</p>`).join("")}` : ""}
-      <h3>Enviar pedido</h3>
-      <div class="row" style="margin-top:0"><input type="email" id="fem" placeholder="email do amigo" style="flex:1;min-width:180px"><button class="btn primary" id="fadd">Enviar pedido</button></div>
+      <div class="fpane">${panes[tab]}</div>
       <div class="row"><button class="btn" id="fx">Fechar</button></div>`;
     const box = m.querySelector(".box");
     box.querySelector("#fx").onclick = m.close;
-    box.querySelector("#fadd").onclick = async () => {
+    box.querySelectorAll("[data-tab]").forEach(b => b.onclick = () => { tab = b.dataset.tab; draw(null, true); });
+    if (box.querySelector("#fadd")) box.querySelector("#fadd").onclick = async () => {
       const em = box.querySelector("#fem").value.trim(); if (!em) return;
       const { data, error } = await sb.rpc("request_friend", { p_email: em });
       if (error) { draw(FR_ERR(error)); return; }
