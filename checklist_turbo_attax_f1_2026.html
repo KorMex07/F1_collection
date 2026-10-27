@@ -310,6 +310,35 @@
   .ftabs button.on .tbdg { background: #fff; color: var(--accent); }
   .fpane { min-height: 170px; } .fpane h3:first-child { margin-top: 12px; }
   .fnote { margin: 4px 0 10px; }
+
+  /* ---------- cabeçalho e barra de ferramentas, versão limpa ---------- */
+  .ibtn svg, .vtabs svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+  .ibtn { width: 42px; height: 42px; padding: 0; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); color: var(--text); cursor: pointer; position: relative; font: inherit; font-size: 14px; font-weight: 600; flex: none; }
+  .ibtn:hover { border-color: var(--accent); }
+  .ibtn.active::after { content: ""; position: absolute; top: 6px; right: 6px; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 2px var(--panel); }
+  .ibtn.primary { width: auto; padding: 0 18px; background: var(--accent); border-color: var(--accent); color: #fff; box-shadow: 0 4px 14px rgba(225,6,0,.35); }
+  .ibtn .bdg { position: absolute; top: -5px; right: -5px; min-width: 17px; height: 17px; padding: 0 4px; border-radius: 99px; background: var(--accent); color: #fff; font-size: 11px; display: grid; place-items: center; box-shadow: 0 0 0 2px #0d0d10; }
+  #fcur { display: none; }
+  .controls { display: flex; flex-wrap: nowrap; gap: 8px; align-items: center; }
+  .controls .grow { display: block; flex: 1 1 0; min-width: 0; }
+  .srch { flex: 0 0 auto; min-width: 0; max-width: none; display: flex; align-items: center; position: relative; }
+  .srch input { width: 0; min-width: 0; height: 42px; padding: 0; margin: 0; border-width: 0; opacity: 0; border-radius: 12px; transition: width .2s ease, opacity .15s ease, padding .2s ease, margin .2s ease; }
+  .srch.open input { width: min(300px, 55vw); padding: 0 12px; margin-left: 8px; border-width: 1px; opacity: 1; }
+  .hero-acts { grid-area: chip; align-self: start; display: flex; gap: 8px; align-items: center; }
+  .hero .ibtn { width: 34px; height: 34px; border-radius: 99px; background: rgba(255,255,255,.07); border-color: rgba(255,255,255,.18); color: #e9e9ef; }
+  .hero .ibtn svg { width: 17px; height: 17px; }
+  .vtabs { display: inline-flex; gap: 4px; padding: 4px; margin: 0 0 18px; background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.14); border-radius: 14px; }
+  .vtabs button { display: inline-flex; align-items: center; gap: 8px; border: 0; background: transparent; color: #cfcfda; font: inherit; font-weight: 600; font-size: 14px; padding: 8px 16px; border-radius: 10px; cursor: pointer; }
+  .vtabs button.on { background: var(--accent); color: #fff; box-shadow: 0 4px 12px rgba(225,6,0,.4); }
+  .progress { margin-bottom: 14px; }
+  @media (max-width: 640px) {
+    .controls { display: flex; flex-wrap: wrap; }
+    .controls .grow { display: block; }
+    .controls .srch.open { flex: 1 1 100%; order: -1; } .srch.open input { flex: 1; width: 100%; }
+    .ibtn.primary .lb { display: none; } .ibtn.primary { width: 42px; padding: 0; }
+    .vtabs { display: flex; width: 100%; } .vtabs button { flex: 1; justify-content: center; }
+    .controls #scan { grid-column: auto; }
+  }
 </style>
 </head>
 <body>
@@ -325,9 +354,13 @@
         <div class="stat"><b id="sDup">0</b><span>repetidas</span></div>
       </div>
     </div>
-    <button class="chip" id="chip" data-s="local">A iniciar…</button>
+    <div class="hero-acts">
+      <button class="ibtn" id="frd" title="Amigos" aria-label="Amigos"><svg viewBox="0 0 24 24"><circle cx="9" cy="8.5" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M16 5.2a3.2 3.2 0 010 6.2M18 14.3c2 .6 3.5 2.4 3.5 5.2"/></svg></button>
+      <button class="chip" id="chip" data-s="local">A iniciar…</button>
+    </div>
   </div>
   <div class="wrap"><div class="progress"><div class="bar"><i id="barfill"></i></div><b id="total"></b></div></div>
+  <div class="wrap"><div class="vtabs" id="vw"><button data-v="list" class="on"><svg viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"/></svg>Lista</button><button data-v="binder"><svg viewBox="0 0 24 24"><path d="M5 4.5h10.5A2.5 2.5 0 0118 7v12.5H7.5A2.5 2.5 0 015 17z"/><path d="M5 17a2.5 2.5 0 012.5-2.5H18"/></svg>Caderneta</button></div></div>
   <div class="checker"></div>
 </header>
 <div class="fbanner" id="fbanner" hidden><div class="wrap fb-in">
@@ -342,10 +375,12 @@
 </div></div>
 <div class="tnote" id="tnote" hidden></div>
 <nav class="tools"><div class="wrap controls">
-  <div class="seg" id="vw"><button data-v="list" class="on">Lista</button><button data-v="binder">Caderneta</button></div>
-  <label class="srch lst-only"><span class="si">🔍</span><input type="search" id="q" placeholder="Pesquisar piloto, equipa, nº ou série…"></label>
+  <div class="srch lst-only" id="srch">
+    <button class="ibtn" id="sbtn" title="Pesquisar" aria-label="Pesquisar"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4-4"/></svg></button>
+    <input type="search" id="q" placeholder="Piloto, equipa, nº ou série…" aria-label="Pesquisar">
+  </div>
   <div class="pop lst-only">
-    <button class="btn tb" id="fbtn" aria-expanded="false"><span class="ic">⚙</span><span class="lb">Filtros</span><span id="fcur"></span></button>
+    <button class="ibtn" id="fbtn" aria-expanded="false" title="Filtros" aria-label="Filtros"><svg viewBox="0 0 24 24"><path d="M4 7h9M19 7h1M4 17h1M11 17h9M4 12h3M13 12h7"/><circle cx="16" cy="7" r="2.2"/><circle cx="8" cy="17" r="2.2"/><circle cx="10" cy="12" r="2.2"/></svg><span id="fcur"></span></button>
     <div class="panel" id="fpanel" hidden>
       <div class="plbl">Mostrar</div>
       <div class="seg" id="flt">
@@ -363,9 +398,8 @@
     </div>
   </div>
   <span class="grow"></span>
-  <button class="btn tb" id="bulk" title="Adicionar por números"><span class="ic">＋</span><span class="lb">Por números</span></button>
-  <button class="btn tb" id="frd" title="Amigos"><span class="ic">👥</span><span class="lb">Amigos</span></button>
-  <button class="btn primary tb" id="scan"><span class="ic">📷</span><span class="lb">Ler carta</span></button>
+  <button class="ibtn" id="bulk" title="Adicionar por números" aria-label="Adicionar por números"><svg viewBox="0 0 24 24"><path d="M4 6h10M4 12h6M4 18h6M17 13v7M13.5 16.5h7"/></svg></button>
+  <button class="ibtn primary" id="scan" title="Ler carta com a câmara" aria-label="Ler carta"><svg viewBox="0 0 24 24"><path d="M4 8.5h3l1.6-2.5h6.8L17 8.5h3V19H4z"/><circle cx="12" cy="13.5" r="3.5"/></svg><span class="lb">Ler carta</span></button>
 </div></nav>
 <main class="wrap" id="main"></main>
 <section class="wrap" id="binder"></section>
@@ -1124,7 +1158,7 @@ async function refreshFriendBadge() {
     }
   } catch (e) {}
   renderTNote(inc);
-  b.innerHTML = `<span class="ic">👥</span><span class="lb">Amigos</span>${n ? `<b class="bdg">${n}</b>` : ""}`;
+  b.innerHTML = `<svg viewBox="0 0 24 24"><circle cx="9" cy="8.5" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M16 5.2a3.2 3.2 0 010 6.2M18 14.3c2 .6 3.5 2.4 3.5 5.2"/></svg>${n ? `<b class="bdg">${n}</b>` : ""}`;
 }
 const FV_OPTS = [["all", "Todas as cartas dele"], ["c_both", "Ambos têm"], ["c_his", "Só ele tem"], ["c_mine", "Só eu tenho"], ["c_none", "Nenhum tem"], ["get", "Repetidas dele que me faltam"], ["give", "Minhas repetidas que lhe faltam"]];
 function fvPanelHtml(cnt) {
@@ -1426,6 +1460,15 @@ document.addEventListener("keydown", e => { if (e.key === "Escape") setPanel(fal
 $("flt").addEventListener("click", () => setTimeout(updFilterBtn, 0));
 $("grp").addEventListener("change", updFilterBtn);
 updFilterBtn();
+const srch = $("srch"), qi = $("q"), sbtn = $("sbtn");
+function closeSearch() { if (!qi.value) srch.classList.remove("open"); }
+sbtn.addEventListener("click", () => {
+  if (srch.classList.contains("open")) { if (qi.value) { qi.value = ""; qi.dispatchEvent(new Event("input")); } srch.classList.remove("open"); qi.blur(); }
+  else { srch.classList.add("open"); qi.focus(); }
+});
+qi.addEventListener("blur", () => setTimeout(closeSearch, 150));
+qi.addEventListener("keydown", e => { if (e.key === "Escape") { qi.value = ""; qi.dispatchEvent(new Event("input")); srch.classList.remove("open"); qi.blur(); } });
+qi.addEventListener("input", () => sbtn.classList.toggle("active", !!qi.value));
 
 
 $("exp").addEventListener("click", () => {
