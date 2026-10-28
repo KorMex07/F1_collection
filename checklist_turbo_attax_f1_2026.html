@@ -360,6 +360,13 @@
     .controls.so .tr { display: none; }
     .totop { right: 12px; bottom: 14px; width: 42px; height: 42px; }
   }
+
+  .hday { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 14px 0 4px; padding-bottom: 3px; border-bottom: 1px solid var(--line); }
+  .hrow { display: flex; gap: 10px; align-items: center; padding: 6px 0; font-size: 14px; }
+  .hrow .ht { color: var(--muted); font-variant-numeric: tabular-nums; font-size: 13px; width: 40px; flex: none; }
+  .hrow .hc { flex: 1; min-width: 0; }
+  .hrow .hs { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 99px; white-space: nowrap; }
+  .hrow .hs.pend { background: rgba(0,212,255,.18); color: #00a9cc; } .hrow .hs.done { background: rgba(53,208,127,.15); color: var(--have); }
 </style>
 </head>
 <body>
@@ -501,25 +508,25 @@ function save() { if (viewing) return; lsSet(KEY, JSON.stringify(have.m)); }
 function saveDirty() { if (viewing) return; lsSet(DIRTY_KEY, JSON.stringify([...dirty])); }
 // datas de aquisição: n -> milissegundos de quando a carta passou de "não tenho" a "tenho"
 const STAMPS_KEY = "turbo-attax-f1-2026-stamps";
-let stamps = {}, suppressStamp = false;
-// stamps = cartas "por pôr na caderneta" (n -> quando foram adicionadas). Só saem daqui quando carregas em "Já as pus na caderneta".
-const CLEARED_KEY = "turbo-attax-f1-2026-cleared";
-const cleared = new Set(); try { JSON.parse(lsGet(CLEARED_KEY) || "[]").forEach(n => cleared.add(n)); } catch (e) {}
-function saveCleared() { lsSet(CLEARED_KEY, JSON.stringify([...cleared])); }
+let stamps = {}, placed = {}, suppressStamp = false; const stampSent = new Set();
+// stamps = quando cada carta foi adicionada (histórico, só se apaga se deixares de ter a carta)
+// placed = quando marcaste a carta como já posta na caderneta. Azul = tem data mas ainda não tem "placed".
+const PLACED_KEY = "turbo-attax-f1-2026-placed";
 try { stamps = JSON.parse(lsGet(STAMPS_KEY) || "{}") || {}; } catch (e) { stamps = {}; }
-function saveStamps() { if (viewing) return; lsSet(STAMPS_KEY, JSON.stringify(stamps)); }
-function pruneStamps() { for (const n in stamps) if (!have.has(n)) delete stamps[n]; saveStamps(); }
+try { placed = JSON.parse(lsGet(PLACED_KEY) || "{}") || {}; } catch (e) { placed = {}; }
+function saveStamps() { if (viewing) return; lsSet(STAMPS_KEY, JSON.stringify(stamps)); lsSet(PLACED_KEY, JSON.stringify(placed)); }
+function pruneStamps() { for (const n in stamps) if (!have.has(n)) delete stamps[n]; for (const n in placed) if (!have.has(n)) delete placed[n]; saveStamps(); }
 function stampChange(n, old) {
   if (suppressStamp) return;
-  if (!have.has(n)) delete stamps[n];
-  else if (!old) stamps[n] = Date.now();   // só conta quando a carta é nova; mais uma cópia não muda a data
+  if (!have.has(n)) { delete stamps[n]; delete placed[n]; }
+  else if (!old) { stamps[n] = Date.now(); delete placed[n]; }   // só conta quando a carta é nova; mais uma cópia não muda a data
   saveStamps();
 }
 function attach(c) { have = c; have.onchange = markDirty; }
 attach(have);
 
 // ---------- Sincronização (Supabase) ----------
-let sb = null, session = null, syncState = "local", flushing = false, flushTimer = null, hasAddedAt = true;
+let sb = null, session = null, syncState = "local", flushing = false, flushTimer = null, hasAddedAt = true, hasPlacedAt = true;
 const CHIP_TXT = { local: "Só neste dispositivo", login: "Entrar para sincronizar", syncing: "A sincronizar…", ok: "✓ Sincronizado", error: "Falhou — tentar de novo" };
 function setState(s, msg) {
   syncState = s;
@@ -544,26 +551,29 @@ async function flush(throwErr) {
   flushing = true;
   setState("syncing");
   const pushed = {};
-  const up = [], upS = [], del = [];
+  const ups = [], del = [];
   for (const n of dirty) {
     const q = have.get(n); pushed[n] = q;
-    if (q > 0) {
-      const row = { user_id: session.user.id, card_id: n, qty: q };
-      if (hasAddedAt && stamps[n]) { row.added_at = new Date(stamps[n]).toISOString(); upS.push(row); }
-      else if (hasAddedAt && cleared.has(n)) { row.added_at = null; upS.push(row); }   // marcada como já posta na caderneta: limpa também na nuvem
-      else up.push(row);
-    } else del.push(n);
+    if (q > 0) ups.push([n, q]); else del.push(n);
   }
+  const iso = ms => new Date(ms).toISOString();
   try {
-    if (upS.length) {
-      const r1 = await sb.from("collection").upsert(upS, { onConflict: "user_id,card_id" });
-      if (r1.error && /added_at/i.test(r1.error.message || "")) { hasAddedAt = false; upS.forEach(r => { delete r.added_at; up.push(r); }); }   // coluna ainda não existe: segue sem datas na nuvem
-      else if (r1.error) throw r1.error;
+    for (let tries = 0; ups.length && tries < 3; tries++) {
+      const rows = ups.map(([n, q]) => {
+        const r = { user_id: session.user.id, card_id: n, qty: q };
+        if (hasAddedAt) { r.added_at = stamps[n] ? iso(stamps[n]) : null; if (hasPlacedAt) r.placed_at = placed[n] ? iso(placed[n]) : null; }
+        return r;
+      });
+      const { error } = await sb.from("collection").upsert(rows, { onConflict: "user_id,card_id" });
+      if (!error) break;
+      const msg = error.message || "";
+      if (hasPlacedAt && /placed_at/i.test(msg)) { hasPlacedAt = false; continue; }          // coluna ainda não existe: "na caderneta" fica só neste aparelho
+      if (hasAddedAt && /added_at/i.test(msg)) { hasAddedAt = false; hasPlacedAt = false; continue; }   // sem datas na nuvem
+      throw error;
     }
-    if (up.length) { const { error } = await sb.from("collection").upsert(up, { onConflict: "user_id,card_id" }); if (error) throw error; }
     if (del.length) { const { error } = await sb.from("collection").delete().in("card_id", del); if (error) throw error; }
-    for (const n in pushed) if (have.get(n) === pushed[n]) { dirty.delete(n); cleared.delete(n); }   // se mudou entretanto, fica para a próxima
-    saveDirty(); saveCleared();
+    for (const n in pushed) if (have.get(n) === pushed[n]) dirty.delete(n);   // se mudou entretanto, fica para a próxima
+    saveDirty();
     if (dirty.size) scheduleFlush(); else setState("ok");
   } catch (e) {
     setState("error", e.message || String(e));
@@ -579,21 +589,30 @@ async function syncNow() {
   try {
     if (!lsGet(SYNCED_KEY)) { Object.keys(have.m).forEach(n => dirty.add(n)); saveDirty(); }   // 1.ª vez: envia o que já tens
     await flush(true);
-    let res = await sb.from("collection").select(hasAddedAt ? "card_id,qty,added_at" : "card_id,qty").range(0, 999);
-    if (res.error && hasAddedAt && /added_at/i.test(res.error.message || "")) { hasAddedAt = false; res = await sb.from("collection").select("card_id,qty").range(0, 999); }
+    const cols = () => "card_id,qty" + (hasAddedAt ? ",added_at" : "") + (hasAddedAt && hasPlacedAt ? ",placed_at" : "");
+    let res = await sb.from("collection").select(cols()).range(0, 999);
+    for (let k = 0; res.error && k < 2; k++) {
+      const msg = res.error.message || "";
+      if (hasPlacedAt && /placed_at/i.test(msg)) hasPlacedAt = false;
+      else if (hasAddedAt && /added_at/i.test(msg)) { hasAddedAt = false; hasPlacedAt = false; }
+      else break;
+      res = await sb.from("collection").select(cols()).range(0, 999);
+    }
     const { data, error } = res;
     if (error) throw error;
-    const remote = {}, rst = {};
-    for (const r of data) if (BYID[compact(r.card_id)] && r.qty > 0) { remote[r.card_id] = r.qty; if (r.added_at) rst[r.card_id] = Date.parse(r.added_at) || 0; }
+    const remote = {}, rst = {}, rpl = {};
+    for (const r of data) if (BYID[compact(r.card_id)] && r.qty > 0) { remote[r.card_id] = r.qty; if (r.added_at) rst[r.card_id] = Date.parse(r.added_at) || 0; if (r.placed_at) rpl[r.card_id] = Date.parse(r.placed_at) || 0; }
     for (const n of dirty) { const q = have.get(n); if (q > 0) remote[n] = q; else delete remote[n]; }   // edições feitas durante a sincronização
     // datas: a da nuvem manda; as locais que a nuvem ainda não tem sobem na próxima sincronização
-    const merged = {};
+    const merged = {}, mergedP = {};
     for (const n in remote) {
-      // com a coluna na nuvem, a nuvem manda (assim "já pus na caderneta" num aparelho vale nos outros); sem ela, ficam as datas locais
-      const ts = !hasAddedAt ? stamps[n] : dirty.has(n) ? (cleared.has(n) ? 0 : (stamps[n] || rst[n])) : rst[n];
+      const ts = dirty.has(n) ? (stamps[n] || rst[n]) : (rst[n] || stamps[n]);
       if (ts) merged[n] = ts;
+      const pl = dirty.has(n) ? placed[n] : (rpl[n] || placed[n]);
+      if (pl) mergedP[n] = pl;
+      if (hasAddedAt && !dirty.has(n) && !stampSent.has(n) && ((stamps[n] && !rst[n]) || (hasPlacedAt && placed[n] && !rpl[n]))) { dirty.add(n); stampSent.add(n); }   // sobe uma vez o que a nuvem ainda não tem
     }
-    stamps = merged; saveStamps(); saveDirty();
+    stamps = merged; placed = mergedP; saveStamps(); saveDirty();
     have.m = remote;
     save(); lsSet(SYNCED_KEY, "1");
     render();
@@ -1007,7 +1026,7 @@ function buildBinder() {
   BPAGES = pages; BJUMPS = jumps;
 }
 const perView = () => (mq.matches ? 2 : 1);
-const isNew = n => !viewing && have.has(n) && !!stamps[n];   // azul = adicionada e ainda por pôr na caderneta
+const isNew = n => !viewing && have.has(n) && !!stamps[n] && !placed[n];   // azul = adicionada e ainda por pôr na caderneta
 function ago(ts) {
   const m = Math.max(0, Math.round((Date.now() - ts) / 60000));
   if (m < 1) return "agora mesmo"; if (m < 60) return `há ${m} min`;
@@ -1019,18 +1038,34 @@ function markPlaced() {
   const ids = Object.keys(stamps).filter(isNew); if (!ids.length) return;
   const k = ids.length;
   askBox("Já estão na caderneta?", `${k} carta${k > 1 ? "s" : ""} azul${k > 1 ? "is passam" : " passa"} à cor normal. Faz isto só depois de ${k > 1 ? "as" : "a"} pores na caderneta física.`, "Sim, já estão", true, () => {
-    suppressStamp = true; ids.forEach(n => { delete stamps[n]; cleared.add(n); markDirty(n); }); suppressStamp = false;
-    saveStamps(); saveCleared(); renderBinder(); toast(`${k} carta${k > 1 ? "s marcadas" : " marcada"} como já na caderneta`);
+    suppressStamp = true; ids.forEach(n => { placed[n] = Date.now(); markDirty(n); }); suppressStamp = false;
+    saveStamps(); renderBinder(); toast(`${k} carta${k > 1 ? "s marcadas" : " marcada"} como já na caderneta`);
   });
 }
 function openHistory() {
   const items = Object.keys(stamps).filter(n => have.has(n) && BYID[compact(n)]).sort((a, b) => stamps[b] - stamps[a]);
-  const rows = items.slice(0, 200).map(n => { const c = BYID[compact(n)], nw = isNew(n);
-    return `<tr><td>${whenStr(stamps[n])}<br><span class="hint">${ago(stamps[n])}</span></td><td><b>#${esc(c.n)}</b> ${esc(titleOf(c))}<br><span class="hint">${esc(cleanSub(c.sub))}</span></td><td>${"🔵"}</td></tr>`; }).join("");
-  const m = modal(`<h2>Por pôr na caderneta</h2>
-    <p class="hint">Cartas adicionadas que ainda não marcaste como postas na caderneta (aparecem a azul lá). Só conta a primeira vez que a carta entra; repetidas não mudam a data.${hasAddedAt ? "" : " <b>Aviso:</b> a coluna added_at ainda não existe no Supabase, por isso as datas só ficam neste aparelho."}</p>
-    ${rows ? `<table><tbody>${rows}</tbody></table>` : `<p>Não há cartas por pôr na caderneta.</p>`}
+  const undated = CARDS.filter(c => have.has(c.n) && !stamps[c.n]).length;
+  const pend = items.filter(isNew).length;
+  const m = modal(`<h2>Histórico da caderneta</h2>
+    <p class="hint">Todas as cartas pela data em que as adicionaste. Só conta a primeira vez que a carta entra; repetidas não mudam a data.${hasAddedAt ? "" : " <b>Aviso:</b> a coluna added_at ainda não existe no Supabase, por isso as datas só ficam neste aparelho."}${hasAddedAt && !hasPlacedAt ? " <b>Aviso:</b> falta a coluna placed_at no Supabase (ver caderneta.sql): o “já na caderneta” só fica neste aparelho." : ""}</p>
+    <div class="seg" id="hflt" style="width:100%;display:flex"><button data-h="all" class="on" style="flex:1">Todas (${items.length})</button><button data-h="new" style="flex:1">Por pôr (${pend})</button><button data-h="done" style="flex:1">Na caderneta (${items.length - pend})</button></div>
+    <div id="hbody" style="margin-top:10px"></div>
+    ${undated ? `<p class="hint">+ ${undated} carta${undated > 1 ? "s" : ""} sem data (já as tinhas antes de existir o histórico).</p>` : ""}
     <div class="row"><button class="btn" id="hx">Fechar</button></div>`);
+  const draw = mode => {
+    const list = items.filter(n => mode === "all" || (mode === "new") === isNew(n)).slice(0, 400);
+    if (!list.length) { m.querySelector("#hbody").innerHTML = `<p class="hint">${mode === "new" ? "Não há cartas por pôr na caderneta." : "Nada para mostrar."}</p>`; return; }
+    let out = "", day = "";
+    for (const n of list) {
+      const c = BYID[compact(n)], d = new Date(stamps[n]), lbl = d.toLocaleDateString("pt-PT", { weekday: "short", day: "2-digit", month: "2-digit", year: "numeric" });
+      if (lbl !== day) { day = lbl; out += `<div class="hday">${esc(lbl)}</div>`; }
+      const pad = x => String(x).padStart(2, "0");
+      out += `<div class="hrow"><span class="ht">${pad(d.getHours())}:${pad(d.getMinutes())}</span><span class="hc"><b>#${esc(c.n)}</b> ${esc(titleOf(c))}<br><span class="hint">${esc(cleanSub(c.sub))}</span></span><span class="hs ${isNew(n) ? "pend" : "done"}">${isNew(n) ? "por pôr" : "✓ na caderneta"}</span></div>`;
+    }
+    m.querySelector("#hbody").innerHTML = out;
+  };
+  draw("all");
+  m.querySelector("#hflt").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; m.querySelectorAll("#hflt button").forEach(x => x.classList.toggle("on", x === b)); draw(b.dataset.h); });
   m.querySelector("#hx").onclick = m.close;
 }
 function cmpState(n) { const a = have.has(n), m = mine && mine.has(n); return a && m ? "both" : a ? "his" : m ? "mine" : "none"; }
@@ -1069,7 +1104,7 @@ function renderBinder() {
       <button class="btn" data-b="prev"${firstReal === 0 ? " disabled" : ""}>‹ Anterior</button>
       <span class="info">Página${lastReal > firstReal ? "s" : ""} ${firstReal + 1}${lastReal > firstReal ? "–" + (lastReal + 1) : ""} de ${P}</span>
       <button class="btn" data-b="next"${lastReal >= P - 1 ? " disabled" : ""}>Seguinte ›</button>
-      <button class="btn" id="hist">🕘 Histórico</button>
+      ${viewing ? "" : `<button class="btn" id="hist">🕘 Histórico</button>`}
       <select id="bj" title="Ir para…">${BJUMPS.map((j, i) => `<option value="${j.page}"${i === cur ? " selected" : ""}>${esc(j.label)}</option>`).join("")}</select>
     </div>
     <div class="binder${per === 1 ? " one" : ""}">${pagesHtml}</div>
